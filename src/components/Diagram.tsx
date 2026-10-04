@@ -4,6 +4,7 @@ import type { CardSpot, CardZone, Flight } from '../flights.ts'
 import { planFlights } from '../flights.ts'
 import type { FrameCard, Zone } from '../engine/simulate.ts'
 import { useVisualizer } from '../store.ts'
+import { BlockHelp } from './BlockHelp.tsx'
 import { flightDuration, useLoopTurn } from './useLoopTurn.ts'
 
 const EMPTY: FrameCard[] = []
@@ -56,6 +57,8 @@ function TaskCard({ item, hot, zone, hidden, still }: { item: FrameCard; hot: bo
 
 function ZoneFrame({
   title,
+  hint,
+  href,
   tone,
   active,
   pinBottom,
@@ -63,6 +66,8 @@ function ZoneFrame({
   children,
 }: {
   title: string
+  hint: string
+  href: string
   tone: 'stack' | 'web' | 'macro' | 'micro' | 'loop'
   active: boolean
   pinBottom?: boolean
@@ -71,7 +76,10 @@ function ZoneFrame({
 }) {
   return (
     <section className={`zone zone-${tone} ${active ? 'zone-active' : ''} ${className ?? ''}`} aria-label={title}>
-      <h2 className="zone-label">{title}</h2>
+      <h2 className="zone-label">
+        {title}
+        <BlockHelp label={title} text={hint} href={href} />
+      </h2>
       <div className={`zone-body ${pinBottom ? 'flex flex-col' : ''}`}>{children}</div>
     </section>
   )
@@ -239,24 +247,56 @@ export function Diagram() {
   return (
     <div ref={rootRef} className="grid min-h-0 gap-5 xl:grid-rows-[minmax(0,1.15fr)_minmax(0,0.9fr)]">
       <div className="grid min-h-56 grid-cols-1 gap-5 sm:grid-cols-2">
-        <ZoneFrame title="Call Stack" tone="stack" pinBottom active={is('stack') || (is('loop') && callStack.length > 0)}>
+        <ZoneFrame
+          title="Call Stack"
+          hint="Стек вызовов. Синхронный код выполняется здесь: вызов функции кладётся сверху и снимается, когда она завершилась. Пока стек не пуст, event loop не берёт задачи из очередей."
+          href="https://developer.mozilla.org/ru/docs/Glossary/Call_stack"
+          tone="stack"
+          pinBottom
+          active={is('stack') || (is('loop') && callStack.length > 0)}
+        >
           <Cards items={callStack} zone="stack" pinBottom hidden={hidden} still={still} active={is('stack') || (is('loop') && callStack.length > 0)} />
         </ZoneFrame>
-        <ZoneFrame title="Web API" tone="web" active={is('webapi')}>
+        <ZoneFrame
+          title="Web API"
+          hint="Браузерные операции вне стека: setTimeout и setInterval ждут здесь, пока не истечёт задержка. Так таймер не блокирует остальной код."
+          href="https://developer.mozilla.org/ru/docs/Web/API"
+          tone="web"
+          active={is('webapi')}
+        >
           <Cards items={step?.webApis ?? EMPTY} zone="web" hidden={hidden} still={still} active={is('webapi')} />
         </ZoneFrame>
       </div>
-      <div className="grid min-h-56 grid-cols-1 gap-5 sm:grid-cols-[104px_minmax(0,1fr)]">
-        <ZoneFrame title="Event Loop" tone="loop" active={is('loop')} className="min-h-28">
+      <div className="grid min-h-56 grid-cols-1 gap-5 sm:grid-cols-[132px_minmax(0,1fr)]">
+        <ZoneFrame
+          title="Event Loop"
+          hint="Связывает стек с очередями. Когда стек пуст, сначала забирает все микрозадачи, затем одну макрозадачу. Стрелки делают оборот в момент, когда задача уходит в Call Stack."
+          href="https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Execution_model#цикл_событий"
+          tone="loop"
+          active={is('loop')}
+          className="min-h-28"
+        >
           <div className="grid h-full place-items-center">
             <LoopGlyph turn={turn} duration={duration} />
           </div>
         </ZoneFrame>
         <div className="grid min-h-0 gap-5 sm:grid-rows-2">
-          <ZoneFrame title="Macrotask Queue" tone="macro" active={is('macro')}>
+          <ZoneFrame
+            title="Macrotask Queue"
+            hint="Очередь макрозадач: колбэки setTimeout и setInterval. Event loop берёт отсюда одну задачу за проход и только после того, как микрозадачи уже пусты."
+            href="https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Execution_model#очередь"
+            tone="macro"
+            active={is('macro')}
+          >
             <Cards items={step?.macrotasks ?? EMPTY} zone="macro" hidden={hidden} still={still} active={is('macro')} />
           </ZoneFrame>
-          <ZoneFrame title="Microtask Queue" tone="micro" active={is('micro')}>
+          <ZoneFrame
+            title="Microtask Queue"
+            hint="Очередь микрозадач: then, catch, finally и queueMicrotask. Они выполняются сразу после текущего кода, все подряд, раньше любой макрозадачи."
+            href="https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API/Microtask_guide#microtasks"
+            tone="micro"
+            active={is('micro')}
+          >
             <Cards items={step?.microtasks ?? EMPTY} zone="micro" hidden={hidden} still={still} active={is('micro')} />
           </ZoneFrame>
         </div>

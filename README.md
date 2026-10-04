@@ -1,32 +1,45 @@
-# React + TypeScript + Vite
+# Event Loop
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Смотри, в каком порядке JavaScript выполняет код. Редактор, консоль и схема event loop живут на одном экране: пишешь фрагмент, идёшь по шагам и видишь, куда уходит каждая задача.
 
-Currently, two official plugins are available:
+Так разбирают вопрос с собеседования «что выведет этот код» — не по памяти, а по тому, как задача проходит через стек и очереди.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Один экран вместо схемы в голове
 
-## React Compiler
+Слева код и консоль. Справа пять зон, через которые проходит программа:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Call Stack** — синхронный код. Вызов функции ложится сверху и снимается, когда она завершилась.
+- **Web API** — таймеры, которые ждут вне стека и не блокируют остальной код.
+- **Event Loop** — момент, когда стек пуст и пора взять следующую задачу.
+- **Macrotask Queue** — колбэки `setTimeout` и `setInterval`. Отсюда берётся одна задача за проход.
+- **Microtask Queue** — промисы и `queueMicrotask`. Они выполняются сразу после текущего кода, все подряд, раньше любой макрозадачи.
 
-## Expanding the Oxlint configuration
+Карточки переезжают между зонами. Стрелки event loop делают оборот в тот момент, когда задача забирается из очереди. Строка, которая сейчас выполняется, подсвечена в редакторе. Консоль показывает вывод в том порядке, в котором он появился бы в браузере.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+У каждой зоны есть короткое пояснение и ссылка на MDN.
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
+## Идёшь в своём темпе
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Запуск проигрывает код сам, с паузой между шагами. Шаг двигает выполнение на одну инструкцию. Скорость можно замедлить, когда хочется успеть прочитать, что произошло. Сброс возвращает к началу.
+
+Вызов функции — отдельный шаг на строке, откуда её вызвали. Следующий шаг уже внутри функции. Так видно и место вызова, и вход в тело.
+
+Время таймеров виртуальное: `setTimeout` на 100 мс не заставляет ждать сто настоящих миллисекунд. Задержка нужна, чтобы показать порядок, а не чтобы сидеть и смотреть на часы.
+
+## 52 примера, от простого к собеседованию
+
+В списке примеры идут по возрастанию сложности.
+
+Сначала синхронный код и вложенные вызовы. Затем таймеры, промисы, `async/await`, `try/catch`, разница `let` и `var` в цикле, `clearTimeout` и `setInterval`. Дальше сборные задачи, которые дают на собеседованиях фронтендеру: несколько очередей, вложенные колбэки, порядок, в котором микрозадачи осушаются раньше макрозадач.
+
+В конце — разбор самописных `debounce` и `throttle`: почему повторный вызов сбрасывает таймер и почему часть вызовов пропускается, пока окно закрыто.
+
+Любой пример можно править. Свой код запускается тем же прогоном.
+
+## Кому это нужно
+
+Тем, кто учит event loop и хочет видеть очередь, а не только итоговый `console.log`.
+
+Тем, кто готовится к собеседованию и хочет проговорить вслух, почему сначала `4`, потом `2`, а `3` оказывается последним.
+
+Тем, кто уже знает правило «сначала микрозадачи», но путается, когда таймер ставит промис, а промис ставит таймер.

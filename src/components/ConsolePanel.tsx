@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { ConsoleCard } from '../engine/simulate.ts'
+import { BlockHelp } from './BlockHelp.tsx'
 import { useVisualizer } from '../store.ts'
 
 const EMPTY: ConsoleCard[] = []
@@ -17,7 +18,14 @@ export function ConsolePanel() {
 
   return (
     <section className="panel flex min-h-44 flex-col" aria-label="Консоль">
-      <h2 className="pt-3 text-center text-[11px] tracking-[0.16em] text-[#8b93a7]">console</h2>
+      <h2 className="panel-title">
+        console
+        <BlockHelp
+          label="console"
+          text="Вывод программы: console.log, предупреждения и ошибки. По нему сверяют, в каком порядке код реально выполнился."
+          href="https://developer.mozilla.org/ru/docs/Web/API/console"
+        />
+      </h2>
       <div ref={scroller} className="min-h-0 flex-1 overflow-auto px-5 pt-2 pb-4">
         {error ? <p className="font-mono text-sm leading-6 text-[#fb7185]">{error}</p> : null}
         {entries.map((entry) => (

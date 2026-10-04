@@ -39,6 +39,7 @@ body {
 }
 
 .panel {
+  position: relative;
   min-height: 0;
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 18px;
@@ -233,6 +234,7 @@ textarea.editor-text::selection {
 
 .toolbar-btn:focus-visible,
 .header-help:focus-visible,
+.block-help:focus-visible,
 select:focus-visible,
 input:focus-visible {
   outline: 2px solid #5eead4;
@@ -286,11 +288,87 @@ input:focus-visible {
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 0 28px rgba(255, 255, 255, 0.05);
 }
 
+.panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  padding-top: 12px;
+  color: #8b93a7;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  line-height: 1;
+}
+
+.block-help {
+  display: grid;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: transparent;
+  color: #c5d0e0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.block-help:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #fff;
+}
+
+.block-help-tip {
+  position: fixed;
+  z-index: 60;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: #141820;
+  padding: 12px 14px;
+  color: #c5d0e0;
+  font-size: 13px;
+  line-height: 1.45;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+.block-help-tip p {
+  margin: 0;
+}
+
+.block-help-title {
+  margin-bottom: 4px;
+  color: #f7fbff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.block-help-link {
+  display: inline-block;
+  margin-top: 8px;
+  color: #7dd3fc;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.block-help-link:hover {
+  text-decoration: underline;
+}
+
 .zone-label {
   position: absolute;
   top: 0;
   left: 50%;
   z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   transform: translate(-50%, -50%);
   border-radius: 10px;
   background: #2a303c;
@@ -299,7 +377,7 @@ input:focus-visible {
   font-size: 13px;
   font-weight: 500;
   line-height: 1;
-  padding: 7px 12px;
+  padding: 6px 8px 6px 12px;
   white-space: nowrap;
 }
 

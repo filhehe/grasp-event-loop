@@ -1,5 +1,6 @@
 import { useEffect, useRef, type KeyboardEvent } from 'react'
 import { tokenize } from '../highlight.ts'
+import { BlockHelp } from './BlockHelp.tsx'
 import { useVisualizer } from '../store.ts'
 
 const LINE = 22
@@ -52,6 +53,14 @@ export function Editor() {
 
   return (
     <section className="panel flex min-h-72 flex-col" aria-label="Редактор кода">
+      <h2 className="panel-title">
+        editor
+        <BlockHelp
+          label="editor"
+          text="Код, который выполняет визуализатор. На каждом шаге подсвечивается текущая строка, поэтому видно, какая инструкция сейчас работает."
+          href="https://developer.mozilla.org/ru/docs/Web/JavaScript/Guide"
+        />
+      </h2>
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
         <div className="flex min-h-full min-w-full">
           <div className="editor-gutter sticky left-0 z-10 shrink-0" aria-hidden="true">
