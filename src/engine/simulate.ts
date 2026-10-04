@@ -1352,7 +1352,7 @@ export function simulate(code: string): Step[] {
     return true
   }
 
-  function writeConsole(kind: ConsoleCard['kind'], args: unknown[], line: number, name = kind) {
+  function writeConsole(kind: ConsoleCard['kind'], args: unknown[], line: number, name: string = kind) {
     const text = args.map((arg) => formatValue(arg)).join(' ')
     log(kind, text)
     const printed = text ? `«${text}»` : 'пустую строку'
