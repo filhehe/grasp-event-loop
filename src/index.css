@@ -592,6 +592,14 @@ input:focus-visible {
     grid-template-rows: minmax(0, 1.15fr) minmax(0, 0.9fr);
     gap: 28px;
   }
+
+  .step-banner-text {
+    display: -webkit-box;
+    min-height: calc(1.5em * 2);
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
 }
 
 .stack-row {

@@ -57,8 +57,10 @@ const cleared = {
   hold: false,
 }
 
+const opening = EXAMPLES.find((example) => example.id === 'classic') ?? EXAMPLES[0]
+
 export const useVisualizer = create<VisualizerState>((set, get) => ({
-  code: EXAMPLES[0].code,
+  code: opening.code,
   speed: 700,
   loopTurn: 0,
   ...cleared,
