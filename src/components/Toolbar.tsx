@@ -88,6 +88,7 @@ export function Toolbar() {
   const playing = status === 'playing'
   const runLabel = playing ? 'Пауза' : status === 'paused' ? 'Продолжить' : 'Запуск'
   const { turn, duration } = useLoopTurn()
+  const completed = useVisualizer((state) => state.completed)
   const matched = EXAMPLES.find((example) => example.code === code)?.id ?? 'custom'
   const visible = EXAMPLES.filter((example) => example.id === matched || level === 'all' || EXAMPLE_NOTES[example.id]?.level === level)
 
@@ -182,7 +183,11 @@ export function Toolbar() {
               value={matched}
               options={[
                 ...(matched === 'custom' ? [{ value: 'custom', label: 'Свой код' }] : []),
-                ...visible.map((example) => ({ value: example.id, label: example.title })),
+                ...visible.map((example) => ({
+                  value: example.id,
+                  label: example.title,
+                  done: completed.includes(example.id),
+                })),
               ]}
               onChange={(next) => {
                 const example = EXAMPLES.find((item) => item.id === next)

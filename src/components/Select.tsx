@@ -1,7 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
-export type SelectOption = { value: string; label: string }
+export type SelectOption = { value: string; label: string; done?: boolean }
 
 function placeMenu(button: HTMLButtonElement, menu: HTMLElement) {
   const bounds = button.getBoundingClientRect()
@@ -168,6 +168,7 @@ export function Select({
                   id={`${listId}-${index}`}
                   className={`ui-select-option ${option.value === value ? 'is-selected' : ''} ${index === active ? 'is-active' : ''}`}
                   aria-selected={option.value === value}
+                  aria-label={option.done ? `${option.label}, пройден` : undefined}
                   onMouseEnter={() => setActive(index)}
                   onClick={() => {
                     onChange(option.value)
@@ -175,7 +176,12 @@ export function Select({
                     buttonRef.current?.focus()
                   }}
                 >
-                  {option.label}
+                  <span className="ui-select-option-label">{option.label}</span>
+                  {option.done ? (
+                    <svg className="ui-select-check" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path d="M3.5 8.5 6.5 11.5 12.5 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  ) : null}
                 </button>
               ))}
             </div>,

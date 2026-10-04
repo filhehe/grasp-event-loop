@@ -2,6 +2,14 @@ import { EXAMPLE_NOTES } from '../exampleNotes.ts'
 import { EXAMPLES } from '../examples.ts'
 import { useVisualizer } from '../store.ts'
 
+function nextInLevel(id: string) {
+  const level = EXAMPLE_NOTES[id]?.level
+  if (!level) return undefined
+  const same = EXAMPLES.filter((example) => EXAMPLE_NOTES[example.id]?.level === level)
+  const index = same.findIndex((example) => example.id === id)
+  return index >= 0 ? same[index + 1] : undefined
+}
+
 const INTRO =
   'Нажмите «Запуск» или «Шаг». На каждом шаге здесь будет написано, что сейчас произошло: где выполняется код, в какую очередь попала задача и почему следующей будет именно она.'
 
@@ -15,8 +23,10 @@ export function StepBanner() {
   )
   const time = useVisualizer((state) => (state.index >= 0 ? state.steps[state.index].time : 0))
   const invalid = useVisualizer((state) => state.error != null)
+  const setCode = useVisualizer((state) => state.setCode)
   const matched = EXAMPLES.find((example) => example.code === code)?.id
   const answer = status === 'done' && matched ? EXAMPLE_NOTES[matched]?.answer : undefined
+  const next = matched && status === 'done' ? nextInLevel(matched) : undefined
   const progress = total > 0 && index >= 0 ? `${index + 1} / ${total}` : `0 / ${total || 0}`
 
   return (
@@ -28,7 +38,16 @@ export function StepBanner() {
           <span aria-hidden="true"> · </span>
           t = {time} мс
         </p>
-        {answer ? <p className="step-answer">{answer}</p> : null}
+        {answer ? (
+          <div className="step-answer">
+            <p>{answer}</p>
+            {next ? (
+              <button type="button" className="toolbar-btn step-next" onClick={() => setCode(next.code)}>
+                Следующий пример
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </section>
   )

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { EXAMPLES } from './examples.ts'
 import { simulate, SyntaxFailure, type Step } from './engine/simulate.ts'
+import { readCompleted, rememberExample } from './progress.ts'
 
 export type Status = 'idle' | 'playing' | 'paused' | 'done'
 
@@ -22,6 +23,7 @@ type VisualizerState = {
   hover: HoverMark | null
   hold: boolean
   loopTurn: number
+  completed: string[]
   setCode: (code: string) => void
   setSpeed: (speed: number) => void
   setHover: (hover: HoverMark | null) => void
@@ -57,15 +59,43 @@ const cleared = {
   hold: false,
 }
 
-const opening = EXAMPLES.find((example) => example.id === 'classic') ?? EXAMPLES[0]
+function exampleFromLocation() {
+  if (typeof location === 'undefined') return undefined
+  const id = new URLSearchParams(location.search).get('example')
+  return EXAMPLES.find((example) => example.id === id)
+}
+
+function syncExampleUrl(code: string) {
+  if (typeof history === 'undefined' || typeof location === 'undefined') return
+  const example = EXAMPLES.find((item) => item.code === code)
+  const url = new URL(location.href)
+  if (example) url.searchParams.set('example', example.id)
+  else url.searchParams.delete('example')
+  const next = `${url.pathname}${url.search}${url.hash}`
+  const current = `${location.pathname}${location.search}${location.hash}`
+  if (next !== current) history.replaceState(null, '', next)
+}
+
+function finish(code: string, completed: string[]) {
+  const example = EXAMPLES.find((item) => item.code === code)
+  if (!example) return { status: 'done' as const }
+  return { status: 'done' as const, completed: rememberExample(example.id, completed) }
+}
+
+const opening = exampleFromLocation() ?? EXAMPLES.find((example) => example.id === 'classic') ?? EXAMPLES[0]
+syncExampleUrl(opening.code)
 
 export const useVisualizer = create<VisualizerState>((set, get) => ({
   code: opening.code,
   speed: 700,
   loopTurn: 0,
+  completed: readCompleted(),
   ...cleared,
 
-  setCode: (code) => set({ code, ...cleared }),
+  setCode: (code) => {
+    syncExampleUrl(code)
+    set({ code, ...cleared })
+  },
   setSpeed: (speed) => set({ speed }),
   setHover: (hover) => set({ hover }),
   setHold: (hold) => set((state) => (state.hold === hold ? state : { hold })),
@@ -86,13 +116,16 @@ export const useVisualizer = create<VisualizerState>((set, get) => ({
         error: null,
         errorLine: null,
         index: 0,
-        status: compiled.steps.length <= 1 ? 'done' : 'playing',
+        ...(compiled.steps.length <= 1 ? finish(state.code, state.completed) : { status: 'playing' as const }),
       })
       return
     }
 
     if (state.status === 'done' || state.index >= state.steps.length - 1) {
-      set({ index: 0, status: state.steps.length <= 1 ? 'done' : 'playing' })
+      set({
+        index: 0,
+        ...(state.steps.length <= 1 ? finish(state.code, state.completed) : { status: 'playing' as const }),
+      })
       return
     }
 
@@ -121,17 +154,21 @@ export const useVisualizer = create<VisualizerState>((set, get) => ({
         error: null,
         errorLine: null,
         index: 0,
-        status: compiled.steps.length <= 1 ? 'done' : 'paused',
+        ...(compiled.steps.length <= 1 ? finish(state.code, state.completed) : { status: 'paused' as const }),
       })
       return
     }
 
     const next = state.index + 1
     if (next >= state.steps.length) {
-      set({ status: 'done' })
+      set(finish(state.code, state.completed))
       return
     }
-    set({ index: next, status: next >= state.steps.length - 1 ? 'done' : 'paused' })
+    const finished = next >= state.steps.length - 1
+    set({
+      index: next,
+      ...(finished ? finish(state.code, state.completed) : { status: 'paused' as const }),
+    })
   },
 
   reset: () => set({ ...cleared }),
@@ -141,9 +178,13 @@ export const useVisualizer = create<VisualizerState>((set, get) => ({
     if (status !== 'playing' || hold) return
     const next = index + 1
     if (next >= steps.length) {
-      set({ status: 'done' })
+      set(finish(get().code, get().completed))
       return
     }
-    set({ index: next, status: next >= steps.length - 1 ? 'done' : 'playing' })
+    const finished = next >= steps.length - 1
+    set({
+      index: next,
+      ...(finished ? finish(get().code, get().completed) : { status: 'playing' as const }),
+    })
   },
 }))

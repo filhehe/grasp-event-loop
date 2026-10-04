@@ -277,6 +277,14 @@ textarea.editor-text::selection {
   line-height: 1.45;
 }
 
+.step-answer p {
+  margin: 0;
+}
+
+.step-next {
+  margin-top: 12px;
+}
+
 .header-field {
   display: flex;
   align-items: center;
@@ -350,7 +358,9 @@ textarea.editor-text::selection {
 }
 
 .ui-select-option {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
   height: 36px;
   border: 0;
@@ -359,11 +369,21 @@ textarea.editor-text::selection {
   color: #e7edf6;
   padding: 0 10px;
   font-size: 13px;
-  line-height: 36px;
+  line-height: 1.2;
   text-align: left;
   white-space: nowrap;
+}
+
+.ui-select-option-label {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.ui-select-check {
+  flex: none;
+  margin-left: auto;
+  color: #5eead4;
 }
 
 .ui-select-option.is-active {
