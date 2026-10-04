@@ -4,6 +4,13 @@ import { simulate, SyntaxFailure, type Step } from './engine/simulate.ts'
 
 export type Status = 'idle' | 'playing' | 'paused' | 'done'
 
+export type HoverMark = {
+  id: string
+  line: number
+  start?: number
+  end?: number
+}
+
 type VisualizerState = {
   code: string
   steps: Step[]
@@ -12,8 +19,14 @@ type VisualizerState = {
   speed: number
   error: string | null
   errorLine: number | null
+  hover: HoverMark | null
+  hold: boolean
+  loopTurn: number
   setCode: (code: string) => void
   setSpeed: (speed: number) => void
+  setHover: (hover: HoverMark | null) => void
+  setHold: (hold: boolean) => void
+  spinLoop: () => void
   play: () => void
   pause: () => void
   togglePlay: () => void
@@ -40,15 +53,21 @@ const cleared = {
   status: 'idle' as const,
   error: null,
   errorLine: null,
+  hover: null,
+  hold: false,
 }
 
 export const useVisualizer = create<VisualizerState>((set, get) => ({
   code: EXAMPLES[0].code,
   speed: 700,
+  loopTurn: 0,
   ...cleared,
 
   setCode: (code) => set({ code, ...cleared }),
   setSpeed: (speed) => set({ speed }),
+  setHover: (hover) => set({ hover }),
+  setHold: (hold) => set((state) => (state.hold === hold ? state : { hold })),
+  spinLoop: () => set((state) => ({ loopTurn: state.loopTurn + 1 })),
 
   play: () => {
     const state = get()
@@ -116,8 +135,8 @@ export const useVisualizer = create<VisualizerState>((set, get) => ({
   reset: () => set({ ...cleared }),
 
   tick: () => {
-    const { status, index, steps } = get()
-    if (status !== 'playing') return
+    const { status, index, steps, hold } = get()
+    if (status !== 'playing' || hold) return
     const next = index + 1
     if (next >= steps.length) {
       set({ status: 'done' })

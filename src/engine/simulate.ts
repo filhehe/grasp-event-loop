@@ -7,6 +7,8 @@ export type FrameCard = {
   label: string
   line: number
   meta?: string
+  start?: number
+  end?: number
 }
 
 export type ConsoleCard = {
@@ -59,6 +61,8 @@ type FnVal = {
   async: boolean
   env: Env
   line: number
+  start: number
+  end: number
 }
 
 type Builtin = {
@@ -76,6 +80,8 @@ type Waiter = {
   label: string
   line: number
   handlesReject: boolean
+  start?: number
+  end?: number
   run: (ok: boolean, value: unknown) => void
 }
 
@@ -98,6 +104,8 @@ type MacroTask = {
   line: number
   meta?: string
   timerId?: number
+  start?: number
+  end?: number
   run: () => void
 }
 
@@ -105,6 +113,8 @@ type MicroTask = {
   id: string
   label: string
   line: number
+  start?: number
+  end?: number
   run: () => void
 }
 
@@ -218,6 +228,14 @@ function truthy(value: unknown): boolean {
   return Boolean(value)
 }
 
+function ru(count: number, one: string, few: string, many: string) {
+  const mod10 = count % 10
+  const mod100 = count % 100
+  const word =
+    mod10 === 1 && mod100 !== 11 ? one : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? few : many
+  return `${count} ${word}`
+}
+
 export function simulate(code: string): Step[] {
   if (!code.trim()) {
     return [
@@ -308,23 +326,77 @@ export function simulate(code: string): Step[] {
         label: task.label,
         line: task.line,
         meta: task.meta,
+        start: task.start,
+        end: task.end,
       })),
       microtasks: microtasks.map((task) => ({
         id: task.id,
         label: task.label,
         line: task.line,
+        start: task.start,
+        end: task.end,
       })),
       console: consoleLines.map((entry) => ({ ...entry })),
     })
     if (steps.length >= MAX_STEPS) {
       const last = steps[steps.length - 1]
-      last.message = 'Остановлено: слишком много шагов'
+      last.message = 'Остановлено: слишком много шагов. Прогон обрезан, чтобы визуализатор не зациклился.'
       last.console = [
         ...last.console,
-        { id: uid(), kind: 'info', text: 'Визуализатор остановился на лимите шагов' },
+        { id: uid(), kind: 'info', text: 'Визуализатор остановился: слишком много шагов' },
       ]
       throw new LimitError()
     }
+  }
+
+  function takeMicro(label: string) {
+    const left = microtasks.length
+    const macros = macrotasks.length
+    const leftText =
+      left === 0
+        ? 'Других микрозадач в очереди нет.'
+        : left === 1
+          ? `Дальше в Microtask Queue ещё одна задача: «${microtasks[0]?.label}». Event Loop возьмёт её следующим шагом, до любой макрозадачи.`
+          : `Дальше в Microtask Queue ещё ${ru(left, 'задача', 'задачи', 'задач')}. Следующая — «${microtasks[0]?.label}». Event Loop возьмёт их по одной, до любой макрозадачи.`
+    const macroText =
+      macros === 0
+        ? 'Макрозадач сейчас нет.'
+        : `В Macrotask Queue ${ru(macros, 'задача ждёт', 'задачи ждут', 'задач ждут')}. Макрозадачу Event Loop возьмёт только когда микрозадач не останется.`
+    return `Event Loop берёт микрозадачу «${label}» и кладёт её в Call Stack. Стек был пуст, поэтому взять задачу можно. ${leftText} ${macroText}`
+  }
+
+  function takeMacro(label: string) {
+    const left = macrotasks.length
+    const leftText =
+      left === 0
+        ? 'Других макрозадач в очереди нет.'
+        : `В Macrotask Queue ещё ${ru(left, 'задача', 'задачи', 'задач')}. За этот проход Event Loop берёт только одну. Следующая — «${macrotasks[0]?.label}».`
+    return `Event Loop берёт макрозадачу «${label}» и кладёт её в Call Stack. Микрозадач в очереди нет, поэтому можно взять одну макрозадачу. ${leftText}`
+  }
+
+  function reactionMessage(label: string, mode: 'pending' | 'ready' | 'just') {
+    if (label === 'Promise.all' || label === 'Promise.race' || label === 'Promise.allSettled') {
+      if (mode === 'pending') {
+        return `${label} следит за этим промисом. В Microtask Queue пока ничего не добавлено: проверка появится только когда промис завершится.`
+      }
+      const when =
+        mode === 'just'
+          ? 'Промис только что завершился.'
+          : 'Промис уже был завершён на этой строке.'
+      return `${when} Проверка ${label} добавлена в Microtask Queue и выполнится после текущего кода на Call Stack, раньше любой макрозадачи.`
+    }
+    if (label.startsWith('await ')) {
+      const name = label.slice('await '.length)
+      if (mode === 'pending') {
+        return `Продолжение функции «${name}» пока не в очереди: промис после await ещё не завершился.`
+      }
+      return `Продолжение функции «${name}» добавлено в Microtask Queue. Промис уже завершён, поэтому «${name}» вернётся на Call Stack после текущего синхронного кода, раньше любой макрозадачи.`
+    }
+    if (mode === 'pending') {
+      return `Колбэк «${label}» пока не в очереди. Промис ещё не завершён, поэтому выполняться этому колбэку нечему. Он попадёт в Microtask Queue в тот шаг, когда промис завершится.`
+    }
+    const when = mode === 'just' ? 'Промис только что завершился.' : 'Промис уже завершён.'
+    return `${when} Колбэк «${label}» добавлен в Microtask Queue. Он выполнится, когда текущий код на Call Stack закончится, и раньше любой макрозадачи.`
   }
 
   function log(kind: ConsoleCard['kind'], text: string) {
@@ -353,6 +425,17 @@ export function simulate(code: string): Step[] {
       async: Boolean(node.async),
       env,
       line: lineOf(node),
+      start: node.start,
+      end: node.end,
+    }
+  }
+
+  function fnSpan(...fns: Array<FnVal | null | undefined>) {
+    const present = fns.filter((fn): fn is FnVal => Boolean(fn))
+    if (!present.length) return undefined
+    return {
+      start: Math.min(...present.map((fn) => fn.start)),
+      end: Math.max(...present.map((fn) => fn.end)),
     }
   }
 
@@ -378,14 +461,16 @@ export function simulate(code: string): Step[] {
         id: waiter.id,
         label: waiter.label,
         line: waiter.line,
+        start: waiter.start,
+        end: waiter.end,
         run: () => waiter.run(settled, payload),
       })
     }
     if (waiters.length) {
       const message =
         waiters.length === 1
-          ? `«${waiters[0].label}» добавлен в Microtask Queue`
-          : 'Реакции промиса добавлены в Microtask Queue'
+          ? reactionMessage(waiters[0].label, 'just')
+          : `Промис только что завершился. В Microtask Queue добавлены ${ru(waiters.length, 'колбэк', 'колбэка', 'колбэков')}, по порядку. Они выполнятся один за другим, когда текущий код на Call Stack закончится, и раньше любой макрозадачи.`
       snapshot(message, waiters[0].line, 'micro')
     }
   }
@@ -421,21 +506,24 @@ export function simulate(code: string): Step[] {
     line: number,
     handlesReject: boolean,
     run: (ok: boolean, value: unknown) => void,
+    span?: { start: number; end: number },
   ) {
     if (handlesReject) promise.handled = true
-    const waiter: Waiter = { id: uid(), label, line, handlesReject, run }
+    const waiter: Waiter = { id: uid(), label, line, handlesReject, start: span?.start, end: span?.end, run }
     if (promise.state === 'pending') {
       promise.waiters.push(waiter)
-      snapshot(`«${label}» запустится после завершения промиса`, line, null)
+      snapshot(reactionMessage(label, 'pending'), line, null)
       return
     }
     microtasks.push({
       id: waiter.id,
       label,
       line,
+      start: span?.start,
+      end: span?.end,
       run: () => run(promise.state === 'fulfilled', promise.value),
     })
-    snapshot(`«${label}» добавлен в Microtask Queue`, line, 'micro')
+    snapshot(reactionMessage(label, 'ready'), line, 'micro')
   }
 
   function promiseThen(promise: SimPromise, onFulfilled: unknown, onRejected: unknown, line: number) {
@@ -443,7 +531,7 @@ export function simulate(code: string): Step[] {
     const rejectedFn = asFn(onRejected)
     const next = createPromise(line)
     const label = fulfilledFn?.label ?? rejectedFn?.label ?? 'then'
-    enqueueReaction(promise, label, line, Boolean(rejectedFn), (ok, value) => {
+    enqueueReaction(promise, label, line, true, (ok, value) => {
       const handler = ok ? fulfilledFn : rejectedFn
       if (!handler) {
         if (ok) fulfill(next, value)
@@ -451,13 +539,13 @@ export function simulate(code: string): Step[] {
         return
       }
       try {
-        entryHint = `Event loop берёт микротаску «${handler.label}» в Call Stack`
+        entryHint = takeMicro(handler.label)
         fulfill(next, invoke(handler, [value], handler.line))
       } catch (error) {
         if (error instanceof LimitError) throw error
         reject(next, error)
       }
-    })
+    }, fnSpan(fulfilledFn, rejectedFn))
     return { __type: 'promise', promise: next } satisfies PromiseBox
   }
 
@@ -485,12 +573,23 @@ export function simulate(code: string): Step[] {
     const depth = callStack.length
     const active: Zone | null = hint ? 'loop' : 'stack'
     if (!hint && line !== value.line) {
-      snapshot(`Вызов ${value.label}`, line, 'stack')
+      snapshot(
+        `Вызов функции «${value.label}». Подсвечена строка, откуда её вызывают. На Call Stack её ещё нет: рамка появится на следующем шаге, когда выполнение зайдёт внутрь.`,
+        line,
+        'stack',
+      )
     }
     callStack.push({ id: uid(), label: value.label, line: value.line })
     try {
       if (value.async) {
-        snapshot(hint ?? `Вход в ${value.label}`, value.line, active)
+        snapshot(
+          hint ??
+            (value.async
+              ? `Функция «${value.label}» попадает сразу в Call Stack. Это async-функция: до первого await она идёт синхронно, как обычная. Пока Call Stack не станет пустым, Event Loop не будет брать задачи из очередей.`
+              : `Функция «${value.label}» попадает сразу в Call Stack и выполняется сверху вниз, со своей первой строки. Пока Call Stack не станет пустым, Event Loop не будет брать задачи из очередей.`),
+          value.line,
+          active,
+        )
         const result = createPromise(value.line)
         const fnEnv = new Env(value.env)
         fnEnv.isFunction = true
@@ -506,7 +605,12 @@ export function simulate(code: string): Step[] {
         return { __type: 'promise', promise: result } satisfies PromiseBox
       }
 
-      snapshot(hint ?? `Вход в ${value.label}`, value.line, active)
+      snapshot(
+        hint ??
+          `Функция «${value.label}» попадает сразу в Call Stack и выполняется сверху вниз, со своей первой строки. Пока Call Stack не станет пустым, Event Loop не будет брать задачи из очередей.`,
+        value.line,
+        active,
+      )
       const fnEnv = new Env(value.env)
       fnEnv.isFunction = true
       bind(value, args, fnEnv)
@@ -539,11 +643,12 @@ export function simulate(code: string): Step[] {
     return false
   }
 
-  type AwaitSpec =
+  type AwaitSpec = (
     | { kind: 'bare'; expr: AstNode }
     | { kind: 'return'; expr: AstNode }
     | { kind: 'decl'; expr: AstNode; name: string; declKind: Kind }
     | { kind: 'assign'; expr: AstNode; name: string }
+  ) & { start: number; end: number }
 
   function parseAwait(stmt: AstNode): AwaitSpec {
     const fail = () => {
@@ -551,7 +656,9 @@ export function simulate(code: string): Step[] {
     }
     if (stmt.type === 'ExpressionStatement') {
       const expr = stmt.expression as AstNode
-      if (expr.type === 'AwaitExpression' && !hasAwait(expr.argument)) return { kind: 'bare', expr: expr.argument as AstNode }
+      if (expr.type === 'AwaitExpression' && !hasAwait(expr.argument)) {
+        return { kind: 'bare', expr: expr.argument as AstNode, start: stmt.start, end: stmt.end }
+      }
       if (
         expr.type === 'AssignmentExpression' &&
         expr.operator === '=' &&
@@ -559,7 +666,13 @@ export function simulate(code: string): Step[] {
         (expr.right as AstNode).type === 'AwaitExpression' &&
         !hasAwait((expr.right as AstNode).argument)
       ) {
-        return { kind: 'assign', name: String((expr.left as AstNode).name), expr: (expr.right as AstNode).argument as AstNode }
+        return {
+          kind: 'assign',
+          name: String((expr.left as AstNode).name),
+          expr: (expr.right as AstNode).argument as AstNode,
+          start: stmt.start,
+          end: stmt.end,
+        }
       }
     }
     if (stmt.type === 'VariableDeclaration' && list(stmt.declarations).length === 1) {
@@ -572,12 +685,21 @@ export function simulate(code: string): Step[] {
         !hasAwait(init.argument)
       ) {
         const kind = stmt.kind === 'const' || stmt.kind === 'var' ? (stmt.kind as Kind) : 'let'
-        return { kind: 'decl', name: String((decl.id as AstNode).name), expr: init.argument as AstNode, declKind: kind }
+        return {
+          kind: 'decl',
+          name: String((decl.id as AstNode).name),
+          expr: init.argument as AstNode,
+          declKind: kind,
+          start: stmt.start,
+          end: stmt.end,
+        }
       }
     }
     if (stmt.type === 'ReturnStatement' && (stmt.argument as AstNode | null)?.type === 'AwaitExpression') {
       const argument = stmt.argument as AstNode
-      if (!hasAwait(argument.argument)) return { kind: 'return', expr: argument.argument as AstNode }
+      if (!hasAwait(argument.argument)) {
+        return { kind: 'return', expr: argument.argument as AstNode, start: stmt.start, end: stmt.end }
+      }
     }
     fail()
     throw new Error('await')
@@ -596,7 +718,7 @@ export function simulate(code: string): Step[] {
         if (fn.body.type !== 'AwaitExpression') {
           throw new Error('В стрелочной async-функции await поддерживается только как await expr')
         }
-        return suspend(fn, env, result, 0, { kind: 'return', expr: fn.body.argument as AstNode }, true)
+        return suspend(fn, env, result, 0, { kind: 'return', expr: fn.body.argument as AstNode, start: fn.body.start, end: fn.body.end }, true)
       }
       fulfill(result, evalExpr(fn.body, env))
       return false
@@ -629,13 +751,22 @@ export function simulate(code: string): Step[] {
     const line = fn.line
     const awaited = toPromise(evalExpr(spec.expr, env), line)
     callStack.pop()
+    snapshot(
+      `await внутри «${fn.label}» ставит функцию на паузу и снимает её с Call Stack. Строки после await не выполнятся, пока промис не завершится. Продолжение вернётся микрозадачей, не продолжением текущего кода.`,
+      line,
+      'stack',
+    )
     enqueueReaction(awaited, `await ${fn.label}`, line, true, (ok, value) => {
       if (!ok) {
         reject(result, value)
         return
       }
       callStack.push({ id: uid(), label: fn.label, line: fn.line })
-      snapshot(`await завершился — «${fn.label}» снова в Call Stack`, fn.line, 'loop')
+      snapshot(
+        `await завершился — функция «${fn.label}» снова в Call Stack. Промис уже готов, поэтому продолжение пришло микрозадачей и идёт раньше следующих макрозадач.`,
+        fn.line,
+        'loop',
+      )
       try {
         if (spec.kind === 'decl') {
           if (spec.declKind === 'var') env.defineVar(spec.name, value)
@@ -656,7 +787,7 @@ export function simulate(code: string): Step[] {
         if (error instanceof LimitError) throw error
         reject(result, error)
       }
-    })
+    }, { start: spec.start, end: spec.end })
     return true
   }
 
@@ -888,6 +1019,9 @@ export function simulate(code: string): Step[] {
     if (isPromiseCtor(object)) {
       if (key === 'resolve') return builtin('Promise.resolve', (args, line) => promiseResolve(args[0], line))
       if (key === 'reject') return builtin('Promise.reject', (args, line) => promiseReject(args[0], line))
+      if (key === 'all') return builtin('Promise.all', (args, line) => promiseAll(args[0], line))
+      if (key === 'race') return builtin('Promise.race', (args, line) => promiseRace(args[0], line))
+      if (key === 'allSettled') return builtin('Promise.allSettled', (args, line) => promiseAllSettled(args[0], line))
       throw new Error(`У Promise нет свойства ${key}`)
     }
     if (typeof object === 'object') return (object as Record<string, unknown>)[key]
@@ -918,22 +1052,145 @@ export function simulate(code: string): Step[] {
     return { __type: 'builtin', name, call }
   }
 
-  function promiseResolve(value: unknown, line: number): PromiseBox {
+  function promiseResolve(value: unknown, line: number, via?: 'Promise.all' | 'Promise.race' | 'Promise.allSettled'): PromiseBox {
     if (isPromiseBox(value)) {
-      snapshot('Promise.resolve возвращает переданный промис', line, 'stack')
+      snapshot(
+        via
+          ? `${via} берёт промис из списка как есть. Новый промис для этого элемента не создаётся: ${via} просто ждёт, когда завершится этот.`
+          : 'Promise.resolve получает уже существующий промис и возвращает его же. Новый промис не создаётся.',
+        line,
+        'stack',
+      )
       return value
     }
     const promise = createPromise(line)
     fulfill(promise, value)
-    snapshot('Promise.resolve создаёт выполненный промис', line, 'stack')
+    snapshot(
+      via
+        ? `${via} оборачивает значение в промис, который уже выполнен. Общий результат по правилам ${via} на этой строке ещё не готов.`
+        : 'Promise.resolve создаёт промис, который уже выполнен. Если на этой строке следом есть then, его колбэк не запустится сейчас: он встанет в Microtask Queue.',
+      line,
+      'stack',
+    )
     return { __type: 'promise', promise }
   }
 
   function promiseReject(reason: unknown, line: number): PromiseBox {
     const promise = createPromise(line)
     reject(promise, reason)
-    snapshot('Promise.reject создаёт отклонённый промис', line, 'stack')
+    snapshot(
+      'Promise.reject создаёт промис, который уже отклонён. Эта строка скрипт не прерывает. Если дальше есть catch или then с обработчиком ошибки, он получит её микрозадачей. Если обработчика нет, отказ попадёт в консоль в конце прогона.',
+      line,
+      'stack',
+    )
     return { __type: 'promise', promise }
+  }
+
+  function promiseList(value: unknown): unknown[] | null {
+    if (Array.isArray(value)) return value
+    return null
+  }
+
+  function promiseAll(value: unknown, line: number): PromiseBox {
+    const items = promiseList(value)
+    const result = createPromise(line)
+    if (!items) {
+      reject(result, 'Promise.all ожидает массив')
+      snapshot('Promise.all отклонён: аргумент не массив. Исключение в код не выбрасывается, возвращается отклонённый промис.', line, 'stack')
+      return { __type: 'promise', promise: result }
+    }
+    if (items.length === 0) {
+      fulfill(result, [])
+      snapshot('Promise.all сразу завершается: список пуст, результат — []. Если дальше есть then, его колбэк не выполнится на этой строке, а встанет в Microtask Queue.', line, 'stack')
+      return { __type: 'promise', promise: result }
+    }
+    const values = new Array<unknown>(items.length)
+    let remaining = items.length
+    let settled = false
+    snapshot(
+      `Promise.all ждёт ${ru(items.length, 'промис', 'промиса', 'промисов')}. В then придёт один массив в том же порядке, что и в списке, даже если промисы завершатся в другом порядке. Один отказ отклонит весь Promise.all.`,
+      line,
+      'stack',
+    )
+    items.forEach((item, index) => {
+      const box = promiseResolve(item, line, 'Promise.all')
+      enqueueReaction(box.promise, 'Promise.all', line, true, (ok, payload) => {
+        if (settled) return
+        if (!ok) {
+          settled = true
+          reject(result, payload)
+          return
+        }
+        values[index] = payload
+        remaining -= 1
+        if (remaining === 0) {
+          settled = true
+          fulfill(result, values)
+        }
+      })
+    })
+    return { __type: 'promise', promise: result }
+  }
+
+  function promiseRace(value: unknown, line: number): PromiseBox {
+    const items = promiseList(value)
+    const result = createPromise(line)
+    if (!items) {
+      reject(result, 'Promise.race ожидает массив')
+      snapshot('Promise.race отклонён: аргумент не массив. Исключение в код не выбрасывается, возвращается отклонённый промис.', line, 'stack')
+      return { __type: 'promise', promise: result }
+    }
+    if (items.length === 0) {
+      snapshot('Promise.race получил пустой список и остаётся в ожидании навсегда: завершать его нечему.', line, 'stack')
+      return { __type: 'promise', promise: result }
+    }
+    let settled = false
+    snapshot(
+      `Promise.race ждёт ${ru(items.length, 'промис', 'промиса', 'промисов')}. В then или catch попадёт результат того, кто завершится первым. Остальные на итог уже не влияют.`,
+      line,
+      'stack',
+    )
+    for (const item of items) {
+      const box = promiseResolve(item, line, 'Promise.race')
+      enqueueReaction(box.promise, 'Promise.race', line, true, (ok, payload) => {
+        if (settled) return
+        settled = true
+        if (ok) fulfill(result, payload)
+        else reject(result, payload)
+      })
+    }
+    return { __type: 'promise', promise: result }
+  }
+
+  function promiseAllSettled(value: unknown, line: number): PromiseBox {
+    const items = promiseList(value)
+    const result = createPromise(line)
+    if (!items) {
+      reject(result, 'Promise.allSettled ожидает массив')
+      snapshot('Promise.allSettled отклонён: аргумент не массив. Исключение в код не выбрасывается, возвращается отклонённый промис.', line, 'stack')
+      return { __type: 'promise', promise: result }
+    }
+    if (items.length === 0) {
+      fulfill(result, [])
+      snapshot('Promise.allSettled сразу завершается: список пуст, результат — []. Если дальше есть then, его колбэк встанет в Microtask Queue.', line, 'stack')
+      return { __type: 'promise', promise: result }
+    }
+    const values = new Array<unknown>(items.length)
+    let remaining = items.length
+    snapshot(
+      `Promise.allSettled ждёт ${ru(items.length, 'промис', 'промиса', 'промисов')}. Отказ одного промиса общий результат не отклоняет. В then придёт массив: у каждого элемента статус fulfilled или rejected.`,
+      line,
+      'stack',
+    )
+    items.forEach((item, index) => {
+      const box = promiseResolve(item, line, 'Promise.allSettled')
+      enqueueReaction(box.promise, 'Promise.allSettled', line, true, (ok, payload) => {
+        values[index] = ok ? { status: 'fulfilled', value: payload } : { status: 'rejected', reason: payload }
+        remaining -= 1
+        if (remaining === 0) fulfill(result, values)
+      })
+    })
+    return { __type: 'promise', promise: result }
   }
 
   function promiseFinally(promise: SimPromise, handler: unknown, line: number): PromiseBox {
@@ -948,7 +1205,7 @@ export function simulate(code: string): Step[] {
         if (error instanceof LimitError) throw error
         reject(next, error)
       }
-    })
+    }, fn ? { start: fn.start, end: fn.end } : undefined)
     return { __type: 'promise', promise: next }
   }
 
@@ -971,7 +1228,11 @@ export function simulate(code: string): Step[] {
       if (promise.state === 'pending') {
         const message = error instanceof Error ? error.message : String(error)
         log('error', message)
-        snapshot('Promise executor выбросил ошибку — промис отклонён', line, 'console')
+        snapshot(
+          'Функция внутри new Promise бросила ошибку, и промис отклонён. Строки скрипта после new Promise продолжают выполняться: ошибка наружу не вылетает, она остаётся внутри промиса.',
+          line,
+          'console',
+        )
         reject(promise, error)
       }
     }
@@ -990,10 +1251,12 @@ export function simulate(code: string): Step[] {
       id: uid(),
       label: timer.label,
       line: timer.line,
+      start: timer.cb.start,
+      end: timer.cb.end,
       meta: timer.kind === 'interval' ? 'interval' : undefined,
       timerId: timer.timerId,
       run() {
-        entryHint = `Event loop берёт макротаску «${timer.label}» в Call Stack`
+        entryHint = takeMacro(timer.label)
         invoke(timer.cb, [], timer.cb.line)
         if (timer.kind === 'interval') afterInterval(timer)
       },
@@ -1006,12 +1269,20 @@ export function simulate(code: string): Step[] {
     if (timer.fires >= MAX_INTERVAL) {
       webApis = webApis.filter((item) => item.id !== timer.id)
       log('info', `setInterval остановлен после ${MAX_INTERVAL} срабатываний`)
-      snapshot('Достигнут лимит setInterval в визуализаторе', timer.line, 'console')
+      snapshot(
+        `setInterval остановлен после ${MAX_INTERVAL} срабатываний. В визуализаторе у интервала есть этот предел, чтобы пример не шёл бесконечно. Новые повторы больше не планируются.`,
+        timer.line,
+        'console',
+      )
       return
     }
     if (timer.delay === 0) {
       enqueueCallback(timer)
-      snapshot(`Следующий тик «${timer.label}» поставлен в Macrotask Queue`, timer.line, 'macro')
+      snapshot(
+        `Предыдущий колбэк setInterval отработал. Следующий запуск «${timer.label}» поставлен в Macrotask Queue. Повтор появляется только после прошлого колбэка, а не все запуски сразу.`,
+        timer.line,
+        'macro',
+      )
       return
     }
     timer.expiresAt = now + timer.delay
@@ -1034,23 +1305,34 @@ export function simulate(code: string): Step[] {
       cb: callback,
       fires: 0,
     }
-    const apiName = kind === 'timeout' ? 'setTimeout' : 'setInterval'
     webApis.push(timer)
-    snapshot(`${apiName} регистрирует «${callback.label}» в Web API (${delay} мс)`, line, 'webapi')
+    snapshot(
+      kind === 'timeout'
+        ? `setTimeout не вызывает «${callback.label}» сейчас. На Call Stack сверху лежит setTimeout, а сам колбэк записан в Web API и ждёт ${delay} мс виртуального времени.`
+        : `setInterval не вызывает «${callback.label}» сейчас. На Call Stack сверху лежит setInterval, а сам колбэк записан в Web API. Повтор будет каждые ${delay} мс виртуального времени, и только после того, как прошлый колбэк отработает.`,
+      line,
+      'webapi',
+    )
     if (delay === 0) {
       if (kind === 'interval') timer.expiresAt = Number.POSITIVE_INFINITY
       else webApis = webApis.filter((item) => item.id !== timer.id)
       enqueueCallback(timer)
-      snapshot(`Задержка 0 мс — «${callback.label}» переходит в Macrotask Queue`, line, 'macro')
+      snapshot(
+        `Задержка 0 мс не запускает «${callback.label}» сразу. Колбэк уходит из Web API в Macrotask Queue. Он выполнится только когда текущий код закончится, Call Stack опустеет и микрозадач не останется.`,
+        line,
+        'macro',
+      )
     }
     return timerId
   }
 
   function cancelTimer(id: number) {
+    const found =
+      webApis.find((timer) => timer.timerId === id) ?? macrotasks.find((task) => task.timerId === id)
     const before = webApis.length + macrotasks.length
     webApis = webApis.filter((timer) => timer.timerId !== id)
     macrotasks = macrotasks.filter((task) => task.timerId !== id)
-    return before !== webApis.length + macrotasks.length
+    return { removed: before !== webApis.length + macrotasks.length, label: found?.label }
   }
 
   function promoteDue() {
@@ -1061,18 +1343,24 @@ export function simulate(code: string): Step[] {
       else timer.expiresAt = Number.POSITIVE_INFINITY
       enqueueCallback(timer)
     }
+    const names = due.map((timer) => `«${timer.label}»`).join(', ')
     const message =
       due.length === 1
-        ? `«${due[0].label}» переходит из Web API в Macrotask Queue`
-        : 'Таймеры переходят из Web API в Macrotask Queue'
+        ? `Задержка вышла. Колбэк ${names} переходит из Web API в Macrotask Queue. Сейчас он не выполняется: его заберёт Event Loop, когда Call Stack будет пуст и микрозадач не останется.`
+        : `Задержка вышла у колбэков ${names}. Они переходят из Web API в Macrotask Queue и ждут там по одному. Сейчас ни один из них не выполняется.`
     snapshot(message, due[0].line, 'macro')
     return true
   }
 
-  function writeConsole(kind: ConsoleCard['kind'], args: unknown[], line: number) {
+  function writeConsole(kind: ConsoleCard['kind'], args: unknown[], line: number, name = kind) {
     const text = args.map((arg) => formatValue(arg)).join(' ')
     log(kind, text)
-    snapshot(`console.${kind === 'log' ? 'log' : kind} → ${text}`, line, 'console')
+    const printed = text ? `«${text}»` : 'пустую строку'
+    snapshot(
+      `console.${name} печатает ${printed} сразу, на этой строке. Это синхронный вызов: в Microtask Queue и Macrotask Queue он не встаёт. На Call Stack в этом шаге сверху лежит console.${name}, после печати эта рамка снимется.`,
+      line,
+      'console',
+    )
   }
 
   function registerGlobals(env: Env) {
@@ -1081,7 +1369,7 @@ export function simulate(code: string): Step[] {
       props: {
         log: builtin('console.log', (args, line) => writeConsole('log', args, line)),
         info: builtin('console.info', (args, line) => writeConsole('info', args, line)),
-        warn: builtin('console.warn', (args, line) => writeConsole('info', args, line)),
+        warn: builtin('console.warn', (args, line) => writeConsole('info', args, line, 'warn')),
         error: builtin('console.error', (args, line) => writeConsole('error', args, line)),
       },
     }
@@ -1092,7 +1380,13 @@ export function simulate(code: string): Step[] {
       'clearTimeout',
       builtin('clearTimeout', (args, line) => {
         const removed = cancelTimer(Number(args[0]))
-        snapshot(removed ? `clearTimeout отменяет таймер #${Number(args[0])}` : 'clearTimeout: таймер уже не активен', line, 'webapi')
+        snapshot(
+          removed.removed
+            ? `clearTimeout снимает таймер #${Number(args[0])}${removed.label ? ` с колбэком «${removed.label}»` : ''}. Колбэк ещё не выполнялся, и в Call Stack он уже не попадёт.`
+            : `clearTimeout ничего не отменил: таймера #${Number(args[0])} уже нет ни в Web API, ни в Macrotask Queue.`,
+          line,
+          'webapi',
+        )
       }),
       'builtin',
     )
@@ -1100,7 +1394,13 @@ export function simulate(code: string): Step[] {
       'clearInterval',
       builtin('clearInterval', (args, line) => {
         const removed = cancelTimer(Number(args[0]))
-        snapshot(removed ? `clearInterval останавливает таймер #${Number(args[0])}` : 'clearInterval: таймер уже не активен', line, 'webapi')
+        snapshot(
+          removed.removed
+            ? `clearInterval останавливает таймер #${Number(args[0])}${removed.label ? ` с колбэком «${removed.label}»` : ''}. Следующие повторы больше не запланируются.`
+            : `clearInterval ничего не остановил: интервала #${Number(args[0])} уже нет ни в Web API, ни в Macrotask Queue.`,
+          line,
+          'webapi',
+        )
       }),
       'builtin',
     )
@@ -1113,12 +1413,18 @@ export function simulate(code: string): Step[] {
           id: uid(),
           label: callback.label,
           line: callback.line,
+          start: callback.start,
+          end: callback.end,
           run() {
-            entryHint = `Event loop берёт микротаску «${callback.label}» в Call Stack`
+            entryHint = takeMicro(callback.label)
             invoke(callback, [], callback.line)
           },
         })
-        snapshot(`queueMicrotask добавляет «${callback.label}» в Microtask Queue`, line, 'micro')
+        snapshot(
+          `queueMicrotask ставит «${callback.label}» в Microtask Queue. Это не таймер. Колбэк выполнится, когда текущий код на Call Stack закончится, раньше любой макрозадачи.`,
+          line,
+          'micro',
+        )
       }),
       'builtin',
     )
@@ -1309,7 +1615,11 @@ export function simulate(code: string): Step[] {
     for (const promise of promises) {
       if (promise.state === 'rejected' && !promise.handled) {
         log('error', `Unhandled rejection: ${formatValue(promise.value)}`)
-        snapshot('Необработанный reject промиса', promise.line || null, 'console')
+        snapshot(
+          `Промис отклонён, а обработчика нет: ни catch, ни then с ошибкой. Причина «${formatValue(promise.value)}» попадает в консоль.`,
+          promise.line || null,
+          'console',
+        )
         promise.handled = true
       }
     }
@@ -1330,13 +1640,18 @@ export function simulate(code: string): Step[] {
       const waiting = webApis.filter((timer) => Number.isFinite(timer.expiresAt))
       if (waiting.length) {
         now = Math.min(...waiting.map((timer) => timer.expiresAt))
-        snapshot(`Виртуальное время → ${now} мс`, waiting[0]?.line ?? null, 'webapi')
+        const due = waiting.find((timer) => timer.expiresAt === now)
+        snapshot(
+          `Виртуальное время переходит к ${now} мс. Реальные миллисекунды не идут. До этой отметки дождался таймер «${due?.label ?? waiting[0]?.label}»: на следующем шаге его колбэк перейдёт из Web API в Macrotask Queue.`,
+          due?.line ?? waiting[0]?.line ?? null,
+          'webapi',
+        )
         continue
       }
       break
     }
     reportUnhandled()
-    snapshot('Готово. Очереди пусты', null, 'loop')
+    snapshot('Готово. Call Stack пуст. В Web API, Microtask Queue и Macrotask Queue ничего не осталось: всё запланированное уже выполнилось.', null, 'loop')
   }
 
   const global = new Env(null)
@@ -1344,15 +1659,19 @@ export function simulate(code: string): Step[] {
   registerGlobals(global)
 
   try {
-    snapshot('Скрипт начинает выполняться', 1, 'stack')
+    snapshot(
+      'Скрипт начинает выполняться сверху вниз. На Call Stack пока пусто: отдельной функции у всего скрипта нет, код идёт с первой строки. Пока этот код не закончится и Call Stack не станет пустым, Event Loop не будет брать задачи из очередей.',
+      1,
+      'stack',
+    )
     execStmts(list(ast.body), global)
     const idleMessage = microtasks.length
-      ? 'Call Stack пуст. Сначала выполнятся все микротаски'
+      ? `Call Stack пуст. В Microtask Queue ${ru(microtasks.length, 'задача', 'задачи', 'задач')}, первая — «${microtasks[0]?.label}». Event Loop сначала выполнит все микрозадачи, по одной. Макрозадачу он возьмёт только после них.`
       : macrotasks.length
-        ? 'Call Stack пуст. Event loop берёт макротаску'
+        ? `Call Stack пуст. Микрозадач нет. В Macrotask Queue ${ru(macrotasks.length, 'задача', 'задачи', 'задач')}, первая — «${macrotasks[0]?.label}». Event Loop возьмёт только её.${macrotasks.length > 1 ? ' Остальные подождут следующих проходов: за один раз берётся одна макрозадача.' : ' Других макрозадач в очереди нет.'}`
         : webApis.length
-          ? 'Call Stack пуст. Ждём таймеры в Web API'
-          : 'Call Stack пуст'
+          ? `Call Stack пуст. Microtask Queue и Macrotask Queue пусты. В Web API ещё ${ru(webApis.length, 'таймер', 'таймера', 'таймеров')}: задержка не вышла, поэтому в очередь они пока не переходят.`
+          : 'Call Stack пуст. Очереди пусты: весь этот код был синхронным и уже выполнился. Event Loop брать нечего.'
     snapshot(idleMessage, null, 'loop')
     pump()
   } catch (error) {

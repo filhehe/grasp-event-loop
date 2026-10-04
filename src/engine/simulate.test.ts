@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { EXAMPLE_NOTES } from '../exampleNotes.ts'
 import { EXAMPLES } from '../examples.ts'
 import { isDequeue, planFlights, type CardSpot } from '../flights.ts'
 import { simulate, SyntaxFailure } from './simulate.ts'
@@ -240,11 +241,20 @@ const picked = planFlights(
 assert.equal(picked[0].from.left, 80)
 assert.equal(picked[0].to.left, 20)
 
-assert.equal(EXAMPLES.length, 52)
+assert.equal(EXAMPLES.length, 68)
 assert.deepEqual(
   EXAMPLES.map((example) => example.title.slice(0, 2)),
-  Array.from({ length: 52 }, (_, index) => String(index + 1).padStart(2, '0')),
+  Array.from({ length: 68 }, (_, index) => String(index + 1).padStart(2, '0')),
 )
+assert.deepEqual(
+  EXAMPLES.map((example) => example.id).sort(),
+  Object.keys(EXAMPLE_NOTES).sort(),
+)
+for (const example of EXAMPLES) {
+  const note = EXAMPLE_NOTES[example.id]
+  assert.ok(note.answer.length > 20, example.id)
+  assert.ok(['junior', 'mid', 'senior', 'staff'].includes(note.level), example.id)
+}
 
 const interviewLogs: Record<string, string[]> = {
   'sync-order': ['1', '2', '3'],
@@ -299,6 +309,22 @@ const interviewLogs: Record<string, string[]> = {
   'micro-drain': ['micro 1', 'micro 2', 'micro 3', 'macro 1', 'macro 2'],
   debounce: ['ждем a', 'ждем b', 'ждем c', 'save c'],
   throttle: ['send a', 'мимо b', 'мимо c', 'снова можно', 'send d', 'снова можно'],
+  'junior-callback': ['before', 'after', 'callback'],
+  'junior-resolve-timeout': ['A', 'B', 'E', 'C', 'D'],
+  'mid-await-yields': ['start', 'body', 'end', 'after await', 'returned'],
+  'mid-extra-tick': ['A', 'C', 'D', 'B'],
+  'mid-sequential-await': ['sync', 'ready a', 'got a', 'ready b', 'got b'],
+  'mid-finally-then': ['finally', 'ok'],
+  'senior-async1': ['script start', 'async1 start', 'async2', 'promise1', 'script end', 'async1 end', 'promise2', 'setTimeout'],
+  'senior-timers': ['start', 'end', 'promise1', 'timeout1', 'timeout3', 'timeout2'],
+  'senior-finally-reject': ['finally', 'fail'],
+  'staff-checkpoint': ['t1', 't1 micro', 't2', 't2 micro'],
+  'staff-starve': ['1', '2', '3', 'macro'],
+  'staff-mix': ['1', '7', '3', '5', '2', '6', '4'],
+  'promise-all': ['sync', '[slow, fast]'],
+  'promise-all-fail': ['no'],
+  'promise-race': ['sync', 'fast'],
+  'promise-all-settled': ['[{status: fulfilled, value: ok}, {status: rejected, reason: no}]'],
 }
 
 for (const example of EXAMPLES) {
@@ -310,6 +336,13 @@ for (const example of EXAMPLES) {
     interviewLogs[example.id],
     example.id,
   )
+  if (example.id === 'promise-all-fail' || example.id === 'promise-all-settled') {
+    assert.deepEqual(
+      last.console.filter((entry) => entry.kind === 'error'),
+      [],
+      example.id,
+    )
+  }
 }
 
 assert.equal(isDequeue('Event loop берёт микротаску «fn» в Call Stack'), true)

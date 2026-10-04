@@ -589,4 +589,209 @@ throttled('b')
 throttled('c')
 setTimeout(() => throttled('d'), 100)`,
   },
+  {
+    id: 'junior-callback',
+    title: '53 · Junior · колбэк',
+    code: `function later(callback) {
+  setTimeout(callback, 0)
+}
+
+console.log('before')
+later(() => console.log('callback'))
+console.log('after')`,
+  },
+  {
+    id: 'junior-resolve-timeout',
+    title: '54 · Junior · resolve в таймере',
+    code: `console.log('A')
+
+new Promise((resolve) => {
+  console.log('B')
+  setTimeout(() => {
+    console.log('C')
+    resolve()
+  }, 0)
+}).then(() => console.log('D'))
+
+console.log('E')`,
+  },
+  {
+    id: 'mid-await-yields',
+    title: '55 · Mid · await не блокирует',
+    code: `console.log('start')
+
+async function run() {
+  console.log('body')
+  await Promise.resolve()
+  console.log('after await')
+}
+
+run().then(() => console.log('returned'))
+console.log('end')`,
+  },
+  {
+    id: 'mid-extra-tick',
+    title: '56 · Mid · лишний тик then',
+    code: `Promise.resolve()
+  .then(() => {
+    console.log('A')
+    return Promise.resolve()
+  })
+  .then(() => console.log('B'))
+
+Promise.resolve()
+  .then(() => console.log('C'))
+  .then(() => console.log('D'))`,
+  },
+  {
+    id: 'mid-sequential-await',
+    title: '57 · Mid · await по очереди',
+    code: `function later(value) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      console.log('ready', value)
+      resolve()
+    }, 0)
+  })
+}
+
+async function run() {
+  await later('a')
+  console.log('got a')
+  await later('b')
+  console.log('got b')
+}
+
+run()
+console.log('sync')`,
+  },
+  {
+    id: 'mid-finally-then',
+    title: '58 · Mid · finally перед then',
+    code: `Promise.resolve('ok')
+  .finally(() => console.log('finally'))
+  .then((value) => console.log(value))`,
+  },
+  {
+    id: 'senior-async1',
+    title: '59 · Senior · async1 и async2',
+    code: `async function async1() {
+  console.log('async1 start')
+  await async2()
+  console.log('async1 end')
+}
+
+async function async2() {
+  console.log('async2')
+}
+
+console.log('script start')
+setTimeout(() => console.log('setTimeout'), 0)
+async1()
+
+new Promise((resolve) => {
+  console.log('promise1')
+  resolve()
+}).then(() => console.log('promise2'))
+
+console.log('script end')`,
+  },
+  {
+    id: 'senior-timers',
+    title: '60 · Senior · таймеры и промис',
+    code: `console.log('start')
+
+setTimeout(() => console.log('timeout1'), 0)
+
+Promise.resolve().then(() => {
+  console.log('promise1')
+  setTimeout(() => console.log('timeout2'), 0)
+})
+
+setTimeout(() => console.log('timeout3'), 0)
+console.log('end')`,
+  },
+  {
+    id: 'senior-finally-reject',
+    title: '61 · Senior · finally и reject',
+    code: `Promise.reject('fail')
+  .finally(() => console.log('finally'))
+  .catch((error) => console.log(error))`,
+  },
+  {
+    id: 'staff-checkpoint',
+    title: '62 · Staff · микротаска между таймерами',
+    code: `setTimeout(() => {
+  console.log('t1')
+  queueMicrotask(() => console.log('t1 micro'))
+}, 0)
+
+setTimeout(() => {
+  console.log('t2')
+  queueMicrotask(() => console.log('t2 micro'))
+}, 0)`,
+  },
+  {
+    id: 'staff-starve',
+    title: '63 · Staff · микротаски держат таймер',
+    code: `let n = 0
+
+function again() {
+  n = n + 1
+  console.log(n)
+  if (n < 3) queueMicrotask(again)
+}
+
+setTimeout(() => console.log('macro'), 0)
+queueMicrotask(again)`,
+  },
+  {
+    id: 'staff-mix',
+    title: '64 · Staff · порядок очередей',
+    code: `console.log(1)
+
+setTimeout(() => console.log(2), 0)
+Promise.resolve().then(() => console.log(3))
+Promise.resolve().then(() => setTimeout(() => console.log(4), 0))
+Promise.resolve().then(() => console.log(5))
+setTimeout(() => console.log(6), 0)
+
+console.log(7)`,
+  },
+  {
+    id: 'promise-all',
+    title: '65 · Mid · Promise.all',
+    code: `function later(value, delay) {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(value), delay)
+  })
+}
+
+console.log('sync')
+Promise.all([later('slow', 30), later('fast', 10)]).then((values) => console.log(values))`,
+  },
+  {
+    id: 'promise-all-fail',
+    title: '66 · Mid · Promise.all падает',
+    code: `Promise.all([Promise.resolve('ok'), Promise.reject('no')])
+  .then((values) => console.log(values))
+  .catch((error) => console.log(error))`,
+  },
+  {
+    id: 'promise-race',
+    title: '67 · Mid · Promise.race',
+    code: `function later(value, delay) {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(value), delay)
+  })
+}
+
+Promise.race([later('slow', 30), later('fast', 10)]).then((value) => console.log(value))
+console.log('sync')`,
+  },
+  {
+    id: 'promise-all-settled',
+    title: '68 · Mid · Promise.allSettled',
+    code: `Promise.allSettled([Promise.resolve('ok'), Promise.reject('no')]).then((values) => console.log(values))`,
+  },
 ]

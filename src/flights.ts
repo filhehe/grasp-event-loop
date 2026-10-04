@@ -17,8 +17,12 @@ export type Flight = {
   meta: string
   from: Rect
   to: Rect
+  fromZone: CardZone
+  toZone: CardZone
   hideId: string
   hot: boolean
+  handoff?: boolean
+  via?: Rect
 }
 
 const SCHEDULERS = new Set([
@@ -58,6 +62,8 @@ export function planFlights(prev: CardSpot[], next: CardSpot[]): Flight[] {
       meta: dest.meta,
       from: source.rect,
       to: dest.rect,
+      fromZone: source.zone,
+      toZone: dest.zone,
       hideId: dest.id,
       hot: Boolean(dest.hot),
     })
@@ -92,5 +98,5 @@ export function planFlights(prev: CardSpot[], next: CardSpot[]): Flight[] {
 }
 
 export function isDequeue(message: string) {
-  return message.startsWith('Event loop берёт') || message.includes('снова в Call Stack')
+  return /^Event [Ll]oop берёт/.test(message) || message.includes('снова в Call Stack')
 }

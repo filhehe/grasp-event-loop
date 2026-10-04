@@ -3,8 +3,101 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Event Loop</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Grasp Event Loop — визуализатор JavaScript event loop</title>
+    <meta
+      name="description"
+      content="Пошаговый визуализатор event loop в JavaScript: Call Stack, Web API, микрозадачи и макрозадачи. 68 задач с собеседований и запуск своего кода."
+    />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#07080b" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="application-name" content="Grasp Event Loop" />
+    <link rel="canonical" href="/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ru_RU" />
+    <meta property="og:site_name" content="Grasp Event Loop" />
+    <meta property="og:title" content="Grasp Event Loop — визуализатор JavaScript event loop" />
+    <meta
+      property="og:description"
+      content="Смотрите, в каком порядке JavaScript выполняет код: стек вызовов, таймеры, промисы и очередь микрозадач. Примеры с собеседований и свой код — по шагам."
+    />
+    <meta property="og:url" content="/" />
+    <meta property="og:image" content="/og.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Grasp Event Loop — визуализатор JavaScript event loop" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Grasp Event Loop — визуализатор JavaScript event loop" />
+    <meta
+      name="twitter:description"
+      content="Call Stack, микрозадачи и макрозадачи по шагам. 68 примеров для собеседования по JavaScript и запуск своего кода."
+    />
+    <meta name="twitter:image" content="/og.png" />
+    <meta name="twitter:image:alt" content="Grasp Event Loop — визуализатор JavaScript event loop" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Grasp Event Loop",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Web",
+        "browserRequirements": "Requires JavaScript",
+        "inLanguage": "ru",
+        "isAccessibleForFree": true,
+        "description": "Пошаговый визуализатор event loop в JavaScript. Показывает Call Stack, Web API, очередь микрозадач и очередь макрозадач. 68 примеров от синхронного кода до задач с собеседования: setTimeout, Promise, async/await, Promise.all, debounce и throttle.",
+        "audience": {
+          "@type": "EducationalAudience",
+          "educationalRole": "student",
+          "audienceType": "Разработчики, которые учат JavaScript event loop и готовятся к собеседованию фронтендера"
+        },
+        "teaches": [
+          "JavaScript event loop",
+          "Call stack",
+          "Очередь микрозадач",
+          "Очередь макрозадач",
+          "setTimeout и setInterval",
+          "Promise then catch finally",
+          "async/await",
+          "Порядок вывода console.log на собеседовании"
+        ],
+        "featureList": [
+          "Редактор своего кода",
+          "Пошаговый прогон и запуск с паузой",
+          "Схема Call Stack, Web API, Event Loop, Macrotask Queue и Microtask Queue",
+          "68 примеров от Junior до Staff",
+          "Объяснение каждого шага и ответ после прогона"
+        ],
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "RUB"
+        }
+      }
+    </script>
+    <script>
+      ;(function () {
+        var url = location.origin + location.pathname.replace(/index\.html$/, '')
+        var canonical = document.querySelector('link[rel="canonical"]')
+        if (canonical) canonical.href = url
+        var og = document.querySelector('meta[property="og:url"]')
+        if (og) og.content = url
+        var image = location.origin + '/og.png'
+        var ogImage = document.querySelector('meta[property="og:image"]')
+        var twitterImage = document.querySelector('meta[name="twitter:image"]')
+        if (ogImage) ogImage.content = image
+        if (twitterImage) twitterImage.content = image
+        var data = document.querySelector('script[type="application/ld+json"]')
+        if (!data) return
+        try {
+          var schema = JSON.parse(data.textContent)
+          schema.url = url
+          data.textContent = JSON.stringify(schema)
+        } catch (error) {}
+      })()
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -14,6 +107,26 @@
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <article>
+        <h1>Grasp Event Loop — визуализатор JavaScript event loop</h1>
+        <p>
+          Grasp Event Loop показывает, в каком порядке JavaScript выполняет код. На одном экране редактор, консоль и схема:
+          Call Stack, Web API, Event Loop, очередь макрозадач и очередь микрозадач.
+        </p>
+        <p>
+          Так разбирают вопрос с собеседования «что выведет этот код»: не по памяти, а по тому, как задача проходит через
+          стек и очереди. Синхронный код выполняется сразу. setTimeout и setInterval ждут в Web API. then, catch, finally,
+          queueMicrotask и продолжение после await попадают в микрозадачи и выполняются раньше любой макрозадачи.
+        </p>
+        <p>
+          В списке 68 примеров, от простого к собеседованию: вложенные вызовы, задержка 0 мс, Promise, async/await,
+          try/catch, let и var в цикле, Promise.all, Promise.race, Promise.allSettled, debounce и throttle. Свой код можно
+          запустить тем же пошаговым прогоном.
+        </p>
+        <p>Чтобы пользоваться визуализатором, включите JavaScript.</p>
+      </article>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
