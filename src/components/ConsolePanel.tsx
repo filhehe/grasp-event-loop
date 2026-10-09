@@ -17,12 +17,12 @@ export function ConsolePanel() {
   }, [entries, error])
 
   return (
-    <section className="panel flex h-full min-h-0 flex-col" aria-label="Консоль">
+    <section className="panel flex h-full min-h-0 flex-col" aria-label="Console">
       <h2 className="zone-label">
         console
         <BlockHelp
           label="console"
-          text="Вывод программы: console.log, предупреждения и ошибки. По нему видно, в каком порядке код реально выполнился."
+          text="Program output: console.log, warnings, and errors. It shows the order in which the code actually ran."
           href="https://developer.mozilla.org/en-US/docs/Web/API/console"
         />
       </h2>

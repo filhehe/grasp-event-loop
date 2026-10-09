@@ -11,7 +11,7 @@ function nextInLevel(id: string) {
 }
 
 const INTRO =
-  'Нажмите «Запуск» или «Шаг». На каждом шаге здесь будет написано, что сейчас произошло: где выполняется код, в какую очередь попала задача и почему следующей будет именно она.'
+  'Press Run or Step. Each step says what just happened: where the code is running, which queue received the task, and why that task is next.'
 
 export function StepBanner() {
   const code = useVisualizer((state) => state.code)
@@ -36,14 +36,14 @@ export function StepBanner() {
         <p className="step-banner-meta">
           {progress}
           <span aria-hidden="true"> · </span>
-          t = {time} мс
+          t = {time} ms
         </p>
         {answer ? (
           <div className="step-answer">
             <p>{answer}</p>
             {next ? (
               <button type="button" className="toolbar-btn step-next" onClick={() => setCode(next.code)}>
-                Следующий пример
+                Next example
               </button>
             ) : null}
           </div>

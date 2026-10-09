@@ -168,7 +168,7 @@ export function Select({
                   id={`${listId}-${index}`}
                   className={`ui-select-option ${option.value === value ? 'is-selected' : ''} ${index === active ? 'is-active' : ''}`}
                   aria-selected={option.value === value}
-                  aria-label={option.done ? `${option.label}, пройден` : undefined}
+                  aria-label={option.done ? `${option.label}, completed` : undefined}
                   onMouseEnter={() => setActive(index)}
                   onClick={() => {
                     onChange(option.value)

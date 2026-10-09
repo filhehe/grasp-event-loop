@@ -1,45 +1,45 @@
 # Grasp Event Loop
 
-Grasp Event Loop показывает, в каком порядке JavaScript выполняет код. Редактор, консоль и схема event loop живут на одном экране: пишешь фрагмент, идёшь по шагам и видишь, куда уходит каждая задача.
+Grasp Event Loop shows the order in which JavaScript runs code. The editor, the console, and the event loop diagram share one screen: write a snippet, step through it, and see where each task goes.
 
-Так разбирают вопрос с собеседования «что выведет этот код» — не по памяти, а по тому, как задача проходит через стек и очереди.
+This is how you work through the interview question “what does this code log” — by watching a task move through the stack and the queues.
 
-## Один экран вместо схемы в голове
+## One screen instead of a diagram in your head
 
-Слева код и консоль. Справа пять зон, через которые проходит программа:
+Code and the console are on the left. On the right are the five zones the program moves through:
 
-- **Call Stack** — синхронный код. Вызов функции ложится сверху и снимается, когда функция завершается.
-- **Web API** — таймеры, которые ждут вне стека и не блокируют остальной код.
-- **Event Loop** — момент, когда стек пуст и пора взять следующую задачу.
-- **Macrotask Queue** — колбэки `setTimeout` и `setInterval`. Отсюда берётся одна задача за проход.
-- **Microtask Queue** — промисы и `queueMicrotask`. Они выполняются сразу после текущего кода, все подряд, раньше любой макрозадачи.
+- **Call Stack** — synchronous code. A function call is pushed on top and popped when the function returns.
+- **Web API** — timers that wait outside the stack and do not block the rest of the code.
+- **Event Loop** — the moment the stack is empty and it is time to take the next task.
+- **Macrotask Queue** — `setTimeout` and `setInterval` callbacks. One task is taken from here per turn.
+- **Microtask Queue** — promises and `queueMicrotask`. They run right after the current code, all of them, before any macrotask.
 
-Карточки переезжают между зонами. Стрелки event loop делают оборот в тот момент, когда задача забирается из очереди. Строка, которая сейчас выполняется, подсвечена в редакторе. Консоль показывает вывод в том порядке, в котором он появился бы в браузере.
+Cards move between zones. The event loop arrows rotate once when a task is taken from a queue. The line that is running is highlighted in the editor. The console shows output in the order a browser would print it.
 
-У каждой зоны есть короткое пояснение и ссылка на MDN.
+Each zone has a short explanation and a link to MDN.
 
-## Идёшь в своём темпе
+## Go at your own pace
 
-Запуск проигрывает код сам, с паузой между шагами. Шаг переходит к следующей инструкции. Скорость можно замедлить, когда хочется успеть прочитать, что произошло. Сброс возвращает к началу.
+Run plays the code on its own, with a pause between steps. Step moves to the next instruction. Slow the speed down when you want time to read what happened. Reset returns to the start.
 
-Вызов функции — отдельный шаг на строке, откуда её вызвали. Следующий шаг уже внутри функции. Так видно и место вызова, и вход в тело.
+A function call is its own step on the line that called it. The next step is already inside the function. You see both the call site and the entry into the body.
 
-Время таймеров виртуальное: `setTimeout` на 100 мс не заставляет ждать сто настоящих миллисекунд. Задержка нужна, чтобы показать порядок, а не чтобы сидеть и смотреть на часы.
+Timer time is virtual: a `setTimeout` of 100 ms does not make you wait a hundred real milliseconds. The delay is there to show order.
 
-## 68 примеров, от простого к собеседованию
+## 68 examples, from the basics to an interview
 
-В списке примеры идут по возрастанию сложности. Фильтр по уровню оставляет Junior, Mid, Senior или Staff.
+The list goes from simpler to harder. The level filter keeps Junior, Mid, Senior, or Staff.
 
-Сначала синхронный код и вложенные вызовы. Затем таймеры, промисы, `async/await`, `try/catch`, разница `let` и `var` в цикле, `clearTimeout` и `setInterval`. Дальше сборные задачи, которые дают на собеседованиях фронтендеру: несколько очередей, вложенные колбэки, `Promise.all`, `Promise.race`, `Promise.allSettled`, порядок, в котором микрозадачи выполняются раньше макрозадач.
+First, synchronous code and nested calls. Then timers, promises, `async/await`, `try/catch`, the difference between `let` and `var` in a loop, `clearTimeout`, and `setInterval`. Then the combined questions asked in front-end interviews: several queues, nested callbacks, `Promise.all`, `Promise.race`, `Promise.allSettled`, and the order in which microtasks run before macrotasks.
 
-Отдельно разобраны самописные `debounce` и `throttle`: почему повторный вызов сбрасывает таймер и почему часть вызовов пропускается, пока окно закрыто.
+`debounce` and `throttle` are covered on their own: why a repeated call resets the timer, and why some calls are skipped while the window is closed.
 
-Между шапкой и редактором на каждом шаге будет написано, что произошло и почему. Когда прогон доходит до конца, там же появляется короткий ответ: почему консоль напечатала именно это. Свой код запускается тем же прогоном, готовой формулировки у него нет. Любой пример можно править.
+Between the header and the editor, each step says what happened and why. When a run finishes, a short answer appears there: why the console printed exactly that. Your own code uses the same run and has no canned answer. Any example can be edited.
 
-## Кому это нужно
+## Who it is for
 
-Тем, кто учит event loop и хочет видеть очередь, а не только итоговый `console.log`.
+People learning the event loop who want to see the queue, not only the final `console.log`.
 
-Тем, кто готовится к собеседованию и хочет проговорить вслух, почему сначала `4`, потом `2`, а `3` оказывается последним.
+People preparing for an interview who want to say out loud why `4` comes first, then `2`, and why `3` is last.
 
-Тем, кто уже знает правило «сначала микрозадачи», но путается, когда таймер ставит промис, а промис ставит таймер.
+People who already know “microtasks first” and still get lost when a timer schedules a promise and a promise schedules a timer.

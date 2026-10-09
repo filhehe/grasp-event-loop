@@ -501,7 +501,7 @@ export function Diagram({
   const loopZone = (
     <ZoneFrame
       title="Event Loop"
-      hint="Связывает стек с очередями. Когда стек пуст, сначала забирает все микрозадачи, затем одну макрозадачу. Карточка залетает сюда, стрелки делают оборот, и только потом она уходит в Call Stack."
+      hint="Connects the stack to the queues. When the stack is empty, it takes every microtask first, then one macrotask. The card flies in here, the arrows rotate once, and only then it moves to the Call Stack."
       href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Execution_model#job_queue_and_event_loop"
       tone="loop"
       active={is('loop')}
@@ -516,7 +516,7 @@ export function Diagram({
   const callStackZone = (
     <ZoneFrame
       title="Call Stack"
-      hint="Стек вызовов. Синхронный код выполняется здесь: вызов функции кладётся сверху и снимается, когда функция завершается. Пока стек не пуст, event loop не берёт задачи из очередей."
+      hint="The call stack. Synchronous code runs here: a function call is pushed on top and popped when the function returns. While the stack has frames, the event loop leaves the queues alone."
       href="https://developer.mozilla.org/en-US/docs/Glossary/Call_stack"
       tone="stack"
       pinBottom
@@ -536,7 +536,7 @@ export function Diagram({
           {phone ? null : callStackZone}
           <ZoneFrame
             title="Web API"
-            hint="Браузерные операции вне стека: setTimeout и setInterval ждут здесь, пока не истечёт задержка. Так таймер не блокирует остальной код."
+            hint="Browser work outside the stack: setTimeout and setInterval wait here until the delay is over. The timer stays off the stack, so the rest of the code keeps running."
             href="https://developer.mozilla.org/en-US/docs/Web/API"
             tone="web"
             active={is('webapi')}
@@ -549,7 +549,7 @@ export function Diagram({
         <div className="grid min-h-0 gap-5 sm:grid-rows-2">
           <ZoneFrame
             title="Macrotask Queue"
-            hint="Очередь макрозадач: колбэки setTimeout и setInterval. Event loop берёт отсюда одну задачу за проход и только после того, как микрозадач уже не осталось."
+            hint="The macrotask queue: setTimeout and setInterval callbacks. The event loop takes one task from here per turn, and only after the microtask queue is empty."
             href="https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API/Microtask_guide#tasks"
             tone="macro"
             active={is('macro')}
@@ -558,7 +558,7 @@ export function Diagram({
           </ZoneFrame>
           <ZoneFrame
             title="Microtask Queue"
-            hint="Очередь микрозадач: then, catch, finally и queueMicrotask. Они выполняются сразу после текущего кода, все подряд, раньше любой макрозадачи."
+            hint="The microtask queue: then, catch, finally, and queueMicrotask. They run right after the current code, all of them, before any macrotask."
             href="https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API/Microtask_guide#microtasks"
             tone="micro"
             active={is('micro')}

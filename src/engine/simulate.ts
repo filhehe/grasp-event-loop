@@ -228,19 +228,15 @@ function truthy(value: unknown): boolean {
   return Boolean(value)
 }
 
-function ru(count: number, one: string, few: string, many: string) {
-  const mod10 = count % 10
-  const mod100 = count % 100
-  const word =
-    mod10 === 1 && mod100 !== 11 ? one : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? few : many
-  return `${count} ${word}`
+function qty(count: number, singular: string, plural = `${singular}s`) {
+  return `${count} ${count === 1 ? singular : plural}`
 }
 
 export function simulate(code: string): Step[] {
   if (!code.trim()) {
     return [
       {
-        message: 'Нечего выполнять',
+        message: 'Nothing to run',
         line: null,
         active: 'loop',
         time: 0,
@@ -263,7 +259,7 @@ export function simulate(code: string): Step[] {
   } catch (error) {
     const loc = (error as { loc?: { line?: number } }).loc
     const message = error instanceof Error ? error.message : String(error)
-    throw new SyntaxFailure(`Синтаксическая ошибка: ${message}`, loc?.line ?? null)
+    throw new SyntaxFailure(`Syntax error: ${message}`, loc?.line ?? null)
   }
 
   const source = code
@@ -340,10 +336,10 @@ export function simulate(code: string): Step[] {
     })
     if (steps.length >= MAX_STEPS) {
       const last = steps[steps.length - 1]
-      last.message = 'Остановлено: слишком много шагов. Прогон обрезан, чтобы визуализатор не зациклился.'
+      last.message = 'Stopped: too many steps. The run was cut short so the visualizer would not loop forever.'
       last.console = [
         ...last.console,
-        { id: uid(), kind: 'info', text: 'Визуализатор остановился: слишком много шагов' },
+        { id: uid(), kind: 'info', text: 'The visualizer stopped: too many steps' },
       ]
       throw new LimitError()
     }
@@ -354,49 +350,48 @@ export function simulate(code: string): Step[] {
     const macros = macrotasks.length
     const leftText =
       left === 0
-        ? 'Других микрозадач в очереди нет.'
+        ? 'No other microtasks are waiting.'
         : left === 1
-          ? `Дальше в Microtask Queue ещё одна задача: «${microtasks[0]?.label}». Event Loop возьмёт её следующим шагом, до любой макрозадачи.`
-          : `Дальше в Microtask Queue ещё ${ru(left, 'задача', 'задачи', 'задач')}. Следующая — «${microtasks[0]?.label}». Event Loop возьмёт их по одной, до любой макрозадачи.`
+          ? `One more task is waiting in the Microtask Queue: "${microtasks[0]?.label}". The Event Loop will take it on the next step, before any macrotask.`
+          : `${qty(left, 'task')} are still waiting in the Microtask Queue. Next is "${microtasks[0]?.label}". The Event Loop will take them one by one, before any macrotask.`
     const macroText =
       macros === 0
-        ? 'Макрозадач сейчас нет.'
-        : `В Macrotask Queue ${ru(macros, 'задача ждёт', 'задачи ждут', 'задач ждут')}. Макрозадачу Event Loop возьмёт только когда микрозадач не останется.`
-    return `Event Loop берёт микрозадачу «${label}» и кладёт её в Call Stack. Стек был пуст, поэтому взять задачу можно. ${leftText} ${macroText}`
+        ? 'There are no macrotasks right now.'
+        : `${qty(macros, 'task')} ${macros === 1 ? 'is' : 'are'} waiting in the Macrotask Queue. The Event Loop will take a macrotask only after the microtasks are gone.`
+    return `Event Loop takes the microtask "${label}" and puts it on the Call Stack. The stack was empty, so a task can be taken. ${leftText} ${macroText}`
   }
 
   function takeMacro(label: string) {
     const left = macrotasks.length
     const leftText =
       left === 0
-        ? 'Других макрозадач в очереди нет.'
-        : `В Macrotask Queue ещё ${ru(left, 'задача', 'задачи', 'задач')}. За этот проход Event Loop берёт только одну. Следующая — «${macrotasks[0]?.label}».`
-    return `Event Loop берёт макрозадачу «${label}» и кладёт её в Call Stack. Микрозадач в очереди нет, поэтому можно взять одну макрозадачу. ${leftText}`
+        ? 'No other macrotasks are waiting.'
+        : left === 1
+          ? `One task is still in the Macrotask Queue. The Event Loop takes only one per turn. Next is "${macrotasks[0]?.label}".`
+          : `${qty(left, 'task')} are still in the Macrotask Queue. The Event Loop takes only one per turn. Next is "${macrotasks[0]?.label}".`
+    return `Event Loop takes the macrotask "${label}" and puts it on the Call Stack. The microtask queue is empty, so one macrotask can be taken. ${leftText}`
   }
 
   function reactionMessage(label: string, mode: 'pending' | 'ready' | 'just') {
     if (label === 'Promise.all' || label === 'Promise.race' || label === 'Promise.allSettled') {
       if (mode === 'pending') {
-        return `${label} следит за этим промисом. В Microtask Queue пока ничего не добавлено: проверка появится только когда промис завершится.`
+        return `${label} is watching this promise. Nothing has been added to the Microtask Queue yet: the check appears when the promise settles.`
       }
-      const when =
-        mode === 'just'
-          ? 'Промис только что завершился.'
-          : 'Промис уже был завершён на этой строке.'
-      return `${when} Проверка ${label} добавлена в Microtask Queue и выполнится после текущего кода на Call Stack, раньше любой макрозадачи.`
+      const when = mode === 'just' ? 'The promise just settled.' : 'The promise was already settled on this line.'
+      return `${when} The ${label} check was added to the Microtask Queue and will run after the current Call Stack code, before any macrotask.`
     }
     if (label.startsWith('await ')) {
       const name = label.slice('await '.length)
       if (mode === 'pending') {
-        return `Продолжение функции «${name}» пока не в очереди: промис после await ещё не завершился.`
+        return `The continuation of "${name}" is not queued yet: the promise after await has not settled.`
       }
-      return `Продолжение функции «${name}» добавлено в Microtask Queue. Промис уже завершён, поэтому «${name}» вернётся на Call Stack после текущего синхронного кода, раньше любой макрозадачи.`
+      return `The continuation of "${name}" was added to the Microtask Queue. The promise has already settled, so "${name}" returns to the Call Stack after the current synchronous code, before any macrotask.`
     }
     if (mode === 'pending') {
-      return `Колбэк «${label}» пока не в очереди. Промис ещё не завершён, поэтому выполняться этому колбэку нечему. Он попадёт в Microtask Queue в тот шаг, когда промис завершится.`
+      return `The callback "${label}" is not queued yet. The promise has not settled, so this callback has nothing to run. It enters the Microtask Queue on the step when the promise settles.`
     }
-    const when = mode === 'just' ? 'Промис только что завершился.' : 'Промис уже завершён.'
-    return `${when} Колбэк «${label}» добавлен в Microtask Queue. Он выполнится, когда текущий код на Call Stack закончится, и раньше любой макрозадачи.`
+    const when = mode === 'just' ? 'The promise just settled.' : 'The promise is already settled.'
+    return `${when} The callback "${label}" was added to the Microtask Queue. It runs when the current Call Stack code finishes, before any macrotask.`
   }
 
   function log(kind: ConsoleCard['kind'], text: string) {
@@ -417,7 +412,7 @@ export function simulate(code: string): Step[] {
       name,
       label: name || snippet(node),
       params: list(node.params).map((param) => {
-        if (param.type !== 'Identifier') throw new Error('Поддерживаются только простые параметры функций')
+        if (param.type !== 'Identifier') throw new Error('Only simple function parameters are supported')
         return String(param.name)
       }),
       body: node.body as AstNode,
@@ -442,7 +437,7 @@ export function simulate(code: string): Step[] {
   function asFn(value: unknown): FnVal | null {
     if (value == null) return null
     if (isFn(value)) return value
-    throw new Error('Ожидалась функция')
+    throw new Error('Expected a function')
   }
 
   function createPromise(line: number) {
@@ -470,7 +465,7 @@ export function simulate(code: string): Step[] {
       const message =
         waiters.length === 1
           ? reactionMessage(waiters[0].label, 'just')
-          : `Промис только что завершился. В Microtask Queue добавлены ${ru(waiters.length, 'колбэк', 'колбэка', 'колбэков')}, по порядку. Они выполнятся один за другим, когда текущий код на Call Stack закончится, и раньше любой макрозадачи.`
+          : `The promise just settled. ${qty(waiters.length, 'callback')} were added to the Microtask Queue, in order. They run one after another when the current Call Stack code finishes, before any macrotask.`
       snapshot(message, waiters[0].line, 'micro')
     }
   }
@@ -574,7 +569,7 @@ export function simulate(code: string): Step[] {
     const active: Zone | null = hint ? 'loop' : 'stack'
     if (!hint && line !== value.line) {
       snapshot(
-        `Вызов функции «${value.label}». Подсвечена строка, откуда её вызывают. На Call Stack её ещё нет: рамка появится на следующем шаге, когда выполнение зайдёт внутрь.`,
+        `Calling "${value.label}". The line that calls it is highlighted. It is not on the Call Stack yet: the frame appears on the next step, when execution enters the function.`,
         line,
         'stack',
       )
@@ -585,8 +580,8 @@ export function simulate(code: string): Step[] {
         snapshot(
           hint ??
             (value.async
-              ? `Функция «${value.label}» попадает сразу в Call Stack. Это async-функция: до первого await она идёт синхронно, как обычная. Пока Call Stack не станет пустым, Event Loop не будет брать задачи из очередей.`
-              : `Функция «${value.label}» попадает сразу в Call Stack и выполняется сверху вниз, со своей первой строки. Пока Call Stack не станет пустым, Event Loop не будет брать задачи из очередей.`),
+              ? `"${value.label}" goes straight onto the Call Stack. It is an async function: until the first await it runs synchronously, like an ordinary function. The Event Loop leaves the queues alone until the Call Stack is empty.`
+              : `"${value.label}" goes straight onto the Call Stack and runs from its first line downward. The Event Loop leaves the queues alone until the Call Stack is empty.`),
           value.line,
           active,
         )
@@ -607,7 +602,7 @@ export function simulate(code: string): Step[] {
 
       snapshot(
         hint ??
-          `Функция «${value.label}» попадает сразу в Call Stack и выполняется сверху вниз, со своей первой строки. Пока Call Stack не станет пустым, Event Loop не будет брать задачи из очередей.`,
+          `"${value.label}" goes straight onto the Call Stack and runs from its first line downward. The Event Loop leaves the queues alone until the Call Stack is empty.`,
         value.line,
         active,
       )
@@ -652,7 +647,7 @@ export function simulate(code: string): Step[] {
 
   function parseAwait(stmt: AstNode): AwaitSpec {
     const fail = () => {
-      throw new Error('await поддерживается как: await expr, const x = await expr, return await expr')
+      throw new Error('await is supported as: await expr, const x = await expr, return await expr')
     }
     if (stmt.type === 'ExpressionStatement') {
       const expr = stmt.expression as AstNode
@@ -716,7 +711,7 @@ export function simulate(code: string): Step[] {
     if (fn.exprBody) {
       if (hasAwait(fn.body)) {
         if (fn.body.type !== 'AwaitExpression') {
-          throw new Error('В стрелочной async-функции await поддерживается только как await expr')
+          throw new Error('In an async arrow function, await is supported only as await expr')
         }
         return suspend(fn, env, result, 0, { kind: 'return', expr: fn.body.argument as AstNode, start: fn.body.start, end: fn.body.end }, true)
       }
@@ -752,7 +747,7 @@ export function simulate(code: string): Step[] {
     const awaited = toPromise(evalExpr(spec.expr, env), line)
     callStack.pop()
     snapshot(
-      `await внутри «${fn.label}» ставит функцию на паузу и снимает её с Call Stack. Строки после await не выполнятся, пока промис не завершится. Продолжение вернётся микрозадачей, не продолжением текущего кода.`,
+      `await inside "${fn.label}" pauses the function and removes it from the Call Stack. The lines after await wait until the promise settles. The continuation comes back as a microtask, not as the rest of the current code.`,
       line,
       'stack',
     )
@@ -763,7 +758,7 @@ export function simulate(code: string): Step[] {
       }
       callStack.push({ id: uid(), label: fn.label, line: fn.line })
       snapshot(
-        `await завершился — функция «${fn.label}» снова в Call Stack. Промис уже готов, поэтому продолжение пришло микрозадачей и идёт раньше следующих макрозадач.`,
+        `await finished — "${fn.label}" is back on the Call Stack. The promise was already ready, so the continuation arrived as a microtask and runs before the next macrotasks.`,
         fn.line,
         'loop',
       )
@@ -793,7 +788,7 @@ export function simulate(code: string): Step[] {
 
   function evalArgs(nodes: unknown, env: Env): unknown[] {
     return list(nodes).map((node) => {
-      if (node.type === 'SpreadElement') throw new Error('spread не поддерживается')
+      if (node.type === 'SpreadElement') throw new Error('spread is not supported')
       return evalExpr(node, env)
     })
   }
@@ -801,8 +796,8 @@ export function simulate(code: string): Step[] {
   function evalExpr(node: AstNode, env: Env): unknown {
     switch (node.type) {
       case 'Literal':
-        if (node.regex) throw new Error('Регулярные выражения не поддерживаются')
-        if (node.bigint != null) throw new Error('BigInt не поддерживается')
+        if (node.regex) throw new Error('Regular expressions are not supported')
+        if (node.bigint != null) throw new Error('BigInt is not supported')
         return node.value
       case 'Identifier':
         return env.get(String(node.name))
@@ -823,7 +818,7 @@ export function simulate(code: string): Step[] {
       case 'ArrayExpression':
         return list(node.elements).map((element) => {
           if (!element) return undefined
-          if (element.type === 'SpreadElement') throw new Error('spread не поддерживается')
+          if (element.type === 'SpreadElement') throw new Error('spread is not supported')
           return evalExpr(element, env)
         })
       case 'ObjectExpression':
@@ -847,11 +842,11 @@ export function simulate(code: string): Step[] {
         return value
       }
       case 'AwaitExpression':
-        throw new Error('await стоит в неподдерживаемой позиции')
+        throw new Error('await is in an unsupported position')
       case 'ThisExpression':
-        throw new Error('this не поддерживается')
+        throw new Error('this is not supported')
       default:
-        throw new Error(`Синтаксис ${node.type} не поддерживается`)
+        throw new Error(`Syntax ${node.type} is not supported`)
     }
   }
 
@@ -882,7 +877,7 @@ export function simulate(code: string): Step[] {
       case 'void':
         return undefined
       default:
-        throw new Error(`Оператор ${String(node.operator)} не поддерживается`)
+        throw new Error(`Operator ${String(node.operator)} is not supported`)
     }
   }
 
@@ -920,7 +915,7 @@ export function simulate(code: string): Step[] {
       case '>=':
         return Boolean(applyBinary('>', left, right)) || left === right
       default:
-        throw new Error(`Оператор ${op} не поддерживается`)
+        throw new Error(`Operator ${op} is not supported`)
     }
   }
 
@@ -938,11 +933,11 @@ export function simulate(code: string): Step[] {
     if (node.operator === '&&') return truthy(left) ? evalExpr(node.right as AstNode, env) : left
     if (node.operator === '||') return truthy(left) ? left : evalExpr(node.right as AstNode, env)
     if (node.operator === '??') return left == null ? evalExpr(node.right as AstNode, env) : left
-    throw new Error(`Оператор ${String(node.operator)} не поддерживается`)
+    throw new Error(`Operator ${String(node.operator)} is not supported`)
   }
 
   function evalAssign(node: AstNode, env: Env): unknown {
-    if ((node.left as AstNode).type !== 'Identifier') throw new Error('Поддерживается только присваивание переменной')
+    if ((node.left as AstNode).type !== 'Identifier') throw new Error('Only assignment to a variable is supported')
     const name = String((node.left as AstNode).name)
     const right = evalExpr(node.right as AstNode, env)
     const op = String(node.operator)
@@ -957,13 +952,13 @@ export function simulate(code: string): Step[] {
     else if (op === '*=') next = Number(current) * Number(right)
     else if (op === '/=') next = Number(current) / Number(right)
     else if (op === '%=') next = Number(current) % Number(right)
-    else throw new Error(`Оператор ${op} не поддерживается`)
+    else throw new Error(`Operator ${op} is not supported`)
     env.set(name, next)
     return next
   }
 
   function evalUpdate(node: AstNode, env: Env): unknown {
-    if ((node.argument as AstNode).type !== 'Identifier') throw new Error('++ и -- поддерживаются только для переменных')
+    if ((node.argument as AstNode).type !== 'Identifier') throw new Error('++ and -- are supported only for variables')
     const name = String((node.argument as AstNode).name)
     const current = Number(env.get(name))
     const next = node.operator === '++' ? current + 1 : current - 1
@@ -974,8 +969,8 @@ export function simulate(code: string): Step[] {
   function evalObject(node: AstNode, env: Env): Record<string, unknown> {
     const object: Record<string, unknown> = {}
     for (const prop of list(node.properties)) {
-      if (prop.type === 'SpreadElement') throw new Error('spread не поддерживается')
-      if (prop.kind === 'get' || prop.kind === 'set') throw new Error('Геттеры и сеттеры не поддерживаются')
+      if (prop.type === 'SpreadElement') throw new Error('spread is not supported')
+      if (prop.kind === 'get' || prop.kind === 'set') throw new Error('Getters and setters are not supported')
       const keyNode = prop.key as AstNode
       const key = prop.computed
         ? String(evalExpr(keyNode, env))
@@ -1005,16 +1000,16 @@ export function simulate(code: string): Step[] {
     const key = node.computed
       ? String(evalExpr(node.property as AstNode, env))
       : String((node.property as AstNode).name)
-    if (object == null) throw new Error(`Нельзя прочитать свойство ${key}`)
+    if (object == null) throw new Error(`Cannot read property ${key}`)
     if (isRecord(object)) {
-      if (!(key in object.props)) throw new Error(`У объекта нет свойства ${key}`)
+      if (!(key in object.props)) throw new Error(`The object has no property ${key}`)
       return object.props[key]
     }
     if (isPromiseBox(object)) {
       if (key === 'then') return builtin('.then', (args, line) => promiseThen(object.promise, args[0], args[1], line))
       if (key === 'catch') return builtin('.catch', (args, line) => promiseThen(object.promise, null, args[0], line))
       if (key === 'finally') return builtin('.finally', (args, line) => promiseFinally(object.promise, args[0], line))
-      throw new Error(`У промиса нет свойства ${key}`)
+      throw new Error(`The promise has no property ${key}`)
     }
     if (isPromiseCtor(object)) {
       if (key === 'resolve') return builtin('Promise.resolve', (args, line) => promiseResolve(args[0], line))
@@ -1022,10 +1017,10 @@ export function simulate(code: string): Step[] {
       if (key === 'all') return builtin('Promise.all', (args, line) => promiseAll(args[0], line))
       if (key === 'race') return builtin('Promise.race', (args, line) => promiseRace(args[0], line))
       if (key === 'allSettled') return builtin('Promise.allSettled', (args, line) => promiseAllSettled(args[0], line))
-      throw new Error(`У Promise нет свойства ${key}`)
+      throw new Error(`Promise has no property ${key}`)
     }
     if (typeof object === 'object') return (object as Record<string, unknown>)[key]
-    throw new Error(`Нельзя прочитать свойство ${key}`)
+    throw new Error(`Cannot read property ${key}`)
   }
 
   function callLine(node: AstNode): number {
@@ -1044,7 +1039,7 @@ export function simulate(code: string): Step[] {
   function evalNew(node: AstNode, env: Env): unknown {
     const callee = evalExpr(node.callee as AstNode, env)
     const args = evalArgs(node.arguments, env)
-    if (!isPromiseCtor(callee)) throw new Error('new поддерживается только для Promise')
+    if (!isPromiseCtor(callee)) throw new Error('new is supported only for Promise')
     return constructPromise(args, lineOf(node))
   }
 
@@ -1056,8 +1051,8 @@ export function simulate(code: string): Step[] {
     if (isPromiseBox(value)) {
       snapshot(
         via
-          ? `${via} берёт промис из списка как есть. Новый промис для этого элемента не создаётся: ${via} просто ждёт, когда завершится этот.`
-          : 'Promise.resolve получает уже существующий промис и возвращает его же. Новый промис не создаётся.',
+          ? `${via} takes the promise from the list as it is. No new promise is created for this item: ${via} waits for this one to settle.`
+          : 'Promise.resolve receives an existing promise and returns that same promise. No new promise is created.',
         line,
         'stack',
       )
@@ -1067,8 +1062,8 @@ export function simulate(code: string): Step[] {
     fulfill(promise, value)
     snapshot(
       via
-        ? `${via} оборачивает значение в промис, который уже выполнен. Общий результат по правилам ${via} на этой строке ещё не готов.`
-        : 'Promise.resolve создаёт промис, который уже выполнен. Если на этой строке следом есть then, его колбэк не запустится сейчас: он встанет в Microtask Queue.',
+        ? `${via} wraps the value in a promise that is already fulfilled. The combined result, by the rules of ${via}, is not ready on this line yet.`
+        : 'Promise.resolve creates a promise that is already fulfilled. If a then follows on this line, its callback does not run now: it enters the Microtask Queue.',
       line,
       'stack',
     )
@@ -1079,7 +1074,7 @@ export function simulate(code: string): Step[] {
     const promise = createPromise(line)
     reject(promise, reason)
     snapshot(
-      'Promise.reject создаёт промис, который уже отклонён. Эта строка скрипт не прерывает. Если дальше есть catch или then с обработчиком ошибки, он получит её микрозадачей. Если обработчика нет, отказ попадёт в консоль в конце прогона.',
+      'Promise.reject creates a promise that is already rejected. This line does not stop the script. If a catch or a then with an error handler follows, it receives the reason as a microtask. With no handler, the rejection reaches the console at the end of the run.',
       line,
       'stack',
     )
@@ -1095,20 +1090,20 @@ export function simulate(code: string): Step[] {
     const items = promiseList(value)
     const result = createPromise(line)
     if (!items) {
-      reject(result, 'Promise.all ожидает массив')
-      snapshot('Promise.all отклонён: аргумент не массив. Исключение в код не выбрасывается, возвращается отклонённый промис.', line, 'stack')
+      reject(result, 'Promise.all expects an array')
+      snapshot('Promise.all is rejected: the argument is not an array. No exception is thrown into the code. A rejected promise is returned.', line, 'stack')
       return { __type: 'promise', promise: result }
     }
     if (items.length === 0) {
       fulfill(result, [])
-      snapshot('Promise.all сразу завершается: список пуст, результат — []. Если дальше есть then, его колбэк не выполнится на этой строке, а встанет в Microtask Queue.', line, 'stack')
+      snapshot('Promise.all settles immediately: the list is empty, and the result is []. If a then follows, its callback does not run on this line. It enters the Microtask Queue.', line, 'stack')
       return { __type: 'promise', promise: result }
     }
     const values = new Array<unknown>(items.length)
     let remaining = items.length
     let settled = false
     snapshot(
-      `Promise.all ждёт ${ru(items.length, 'промис', 'промиса', 'промисов')}. В then придёт один массив в том же порядке, что и в списке, даже если промисы завершатся в другом порядке. Один отказ отклонит весь Promise.all.`,
+      `Promise.all is waiting for ${qty(items.length, 'promise')}. then receives one array in the same order as the list, even if the promises settle in a different order. One rejection rejects the whole Promise.all.`,
       line,
       'stack',
     )
@@ -1136,17 +1131,17 @@ export function simulate(code: string): Step[] {
     const items = promiseList(value)
     const result = createPromise(line)
     if (!items) {
-      reject(result, 'Promise.race ожидает массив')
-      snapshot('Promise.race отклонён: аргумент не массив. Исключение в код не выбрасывается, возвращается отклонённый промис.', line, 'stack')
+      reject(result, 'Promise.race expects an array')
+      snapshot('Promise.race is rejected: the argument is not an array. No exception is thrown into the code. A rejected promise is returned.', line, 'stack')
       return { __type: 'promise', promise: result }
     }
     if (items.length === 0) {
-      snapshot('Promise.race получил пустой список и остаётся в ожидании навсегда: завершать его нечему.', line, 'stack')
+      snapshot('Promise.race received an empty list and stays pending forever: nothing can settle it.', line, 'stack')
       return { __type: 'promise', promise: result }
     }
     let settled = false
     snapshot(
-      `Promise.race ждёт ${ru(items.length, 'промис', 'промиса', 'промисов')}. В then или catch попадёт результат того, кто завершится первым. Остальные на итог уже не влияют.`,
+      `Promise.race is waiting for ${qty(items.length, 'promise')}. then or catch receives the result of whichever settles first. The others no longer affect the outcome.`,
       line,
       'stack',
     )
@@ -1166,19 +1161,19 @@ export function simulate(code: string): Step[] {
     const items = promiseList(value)
     const result = createPromise(line)
     if (!items) {
-      reject(result, 'Promise.allSettled ожидает массив')
-      snapshot('Promise.allSettled отклонён: аргумент не массив. Исключение в код не выбрасывается, возвращается отклонённый промис.', line, 'stack')
+      reject(result, 'Promise.allSettled expects an array')
+      snapshot('Promise.allSettled is rejected: the argument is not an array. No exception is thrown into the code. A rejected promise is returned.', line, 'stack')
       return { __type: 'promise', promise: result }
     }
     if (items.length === 0) {
       fulfill(result, [])
-      snapshot('Promise.allSettled сразу завершается: список пуст, результат — []. Если дальше есть then, его колбэк встанет в Microtask Queue.', line, 'stack')
+      snapshot('Promise.allSettled settles immediately: the list is empty, and the result is []. If a then follows, its callback enters the Microtask Queue.', line, 'stack')
       return { __type: 'promise', promise: result }
     }
     const values = new Array<unknown>(items.length)
     let remaining = items.length
     snapshot(
-      `Promise.allSettled ждёт ${ru(items.length, 'промис', 'промиса', 'промисов')}. Отказ одного промиса общий результат не отклоняет. В then придёт массив: у каждого элемента статус fulfilled или rejected.`,
+      `Promise.allSettled is waiting for ${qty(items.length, 'promise')}. One rejected promise does not reject the combined result. then receives an array: each item has status fulfilled or rejected.`,
       line,
       'stack',
     )
@@ -1211,7 +1206,7 @@ export function simulate(code: string): Step[] {
 
   function constructPromise(args: unknown[], line: number): PromiseBox {
     const executor = asFn(args[0])
-    if (!executor) throw new Error('Promise executor должен быть функцией')
+    if (!executor) throw new Error('The Promise executor must be a function')
     const promise = createPromise(line)
     const resolve = builtin('resolve', (values) => {
       fulfill(promise, values[0])
@@ -1229,7 +1224,7 @@ export function simulate(code: string): Step[] {
         const message = error instanceof Error ? error.message : String(error)
         log('error', message)
         snapshot(
-          'Функция внутри new Promise бросила ошибку, и промис отклонён. Строки скрипта после new Promise продолжают выполняться: ошибка наружу не вылетает, она остаётся внутри промиса.',
+          'The function inside new Promise threw, and the promise is rejected. The script lines after new Promise keep running: the error stays inside the promise.',
           line,
           'console',
         )
@@ -1268,9 +1263,9 @@ export function simulate(code: string): Step[] {
     timer.fires += 1
     if (timer.fires >= MAX_INTERVAL) {
       webApis = webApis.filter((item) => item.id !== timer.id)
-      log('info', `setInterval остановлен после ${MAX_INTERVAL} срабатываний`)
+      log('info', `setInterval stopped after ${MAX_INTERVAL} runs`)
       snapshot(
-        `setInterval остановлен после ${MAX_INTERVAL} срабатываний. В визуализаторе у интервала есть этот предел, чтобы пример не шёл бесконечно. Новые повторы больше не планируются.`,
+        `setInterval stopped after ${MAX_INTERVAL} runs. The visualizer caps an interval so an example cannot run forever. No further repeats are scheduled.`,
         timer.line,
         'console',
       )
@@ -1279,7 +1274,7 @@ export function simulate(code: string): Step[] {
     if (timer.delay === 0) {
       enqueueCallback(timer)
       snapshot(
-        `Предыдущий колбэк setInterval отработал. Следующий запуск «${timer.label}» поставлен в Macrotask Queue. Повтор появляется только после прошлого колбэка, а не все запуски сразу.`,
+        `The previous setInterval callback has finished. The next run of "${timer.label}" is in the Macrotask Queue. A repeat appears only after the previous callback, not as every run at once.`,
         timer.line,
         'macro',
       )
@@ -1290,7 +1285,7 @@ export function simulate(code: string): Step[] {
 
   function scheduleTimer(args: unknown[], line: number, kind: 'timeout' | 'interval') {
     const callback = asFn(args[0])
-    if (!callback) throw new Error(`${kind === 'timeout' ? 'setTimeout' : 'setInterval'} ожидает функцию`)
+    if (!callback) throw new Error(`${kind === 'timeout' ? 'setTimeout' : 'setInterval'} expects a function`)
     const delay = readDelay(args[1])
     const timerId = ++timerSeq
     const timer: WebTimer = {
@@ -1308,8 +1303,8 @@ export function simulate(code: string): Step[] {
     webApis.push(timer)
     snapshot(
       kind === 'timeout'
-        ? `setTimeout не вызывает «${callback.label}» сейчас. На Call Stack сверху лежит setTimeout, а сам колбэк записан в Web API и ждёт ${delay} мс виртуального времени.`
-        : `setInterval не вызывает «${callback.label}» сейчас. На Call Stack сверху лежит setInterval, а сам колбэк записан в Web API. Повтор будет каждые ${delay} мс виртуального времени, и только после того, как прошлый колбэк отработает.`,
+        ? `setTimeout does not call "${callback.label}" now. setTimeout is on top of the Call Stack, and the callback itself is recorded in the Web API, waiting ${delay} ms of virtual time.`
+        : `setInterval does not call "${callback.label}" now. setInterval is on top of the Call Stack, and the callback itself is recorded in the Web API. It repeats every ${delay} ms of virtual time, and only after the previous callback has finished.`,
       line,
       'webapi',
     )
@@ -1318,7 +1313,7 @@ export function simulate(code: string): Step[] {
       else webApis = webApis.filter((item) => item.id !== timer.id)
       enqueueCallback(timer)
       snapshot(
-        `Задержка 0 мс не запускает «${callback.label}» сразу. Колбэк уходит из Web API в Macrotask Queue. Он выполнится только когда текущий код закончится, Call Stack опустеет и микрозадач не останется.`,
+        `A delay of 0 ms does not start "${callback.label}" immediately. The callback moves from the Web API to the Macrotask Queue. It runs when the current code has finished, the Call Stack is empty, and no microtasks remain.`,
         line,
         'macro',
       )
@@ -1346,8 +1341,8 @@ export function simulate(code: string): Step[] {
     const names = due.map((timer) => `«${timer.label}»`).join(', ')
     const message =
       due.length === 1
-        ? `Задержка вышла. Колбэк ${names} переходит из Web API в Macrotask Queue. Сейчас он не выполняется: его заберёт Event Loop, когда Call Stack будет пуст и микрозадач не останется.`
-        : `Задержка вышла у колбэков ${names}. Они переходят из Web API в Macrotask Queue и ждут там по одному. Сейчас ни один из них не выполняется.`
+        ? `The delay is over. Callback ${names} moves from the Web API to the Macrotask Queue. It is not running yet: the Event Loop will take it when the Call Stack is empty and no microtasks remain.`
+        : `The delay is over for callbacks ${names}. They move from the Web API to the Macrotask Queue and wait there one by one. None of them is running yet.`
     snapshot(message, due[0].line, 'macro')
     return true
   }
@@ -1355,9 +1350,9 @@ export function simulate(code: string): Step[] {
   function writeConsole(kind: ConsoleCard['kind'], args: unknown[], line: number, name: string = kind) {
     const text = args.map((arg) => formatValue(arg)).join(' ')
     log(kind, text)
-    const printed = text ? `«${text}»` : 'пустую строку'
+    const printed = text ? `"${text}"` : 'an empty string'
     snapshot(
-      `console.${name} печатает ${printed} сразу, на этой строке. Это синхронный вызов: в Microtask Queue и Macrotask Queue он не встаёт. На Call Stack в этом шаге сверху лежит console.${name}, после печати эта рамка снимется.`,
+      `console.${name} prints ${printed} immediately, on this line. It is a synchronous call: it does not enter the Microtask Queue or the Macrotask Queue. On this step console.${name} is on top of the Call Stack, and that frame is removed after the print.`,
       line,
       'console',
     )
@@ -1382,8 +1377,8 @@ export function simulate(code: string): Step[] {
         const removed = cancelTimer(Number(args[0]))
         snapshot(
           removed.removed
-            ? `clearTimeout снимает таймер #${Number(args[0])}${removed.label ? ` с колбэком «${removed.label}»` : ''}. Колбэк ещё не выполнялся, и в Call Stack он уже не попадёт.`
-            : `clearTimeout ничего не отменил: таймера #${Number(args[0])} уже нет ни в Web API, ни в Macrotask Queue.`,
+            ? `clearTimeout removes timer #${Number(args[0])}${removed.label ? ` with callback "${removed.label}"` : ''}. The callback has not run, and it will not reach the Call Stack.`
+            : `clearTimeout cancelled nothing: timer #${Number(args[0])} is already gone from both the Web API and the Macrotask Queue.`,
           line,
           'webapi',
         )
@@ -1396,8 +1391,8 @@ export function simulate(code: string): Step[] {
         const removed = cancelTimer(Number(args[0]))
         snapshot(
           removed.removed
-            ? `clearInterval останавливает таймер #${Number(args[0])}${removed.label ? ` с колбэком «${removed.label}»` : ''}. Следующие повторы больше не запланируются.`
-            : `clearInterval ничего не остановил: интервала #${Number(args[0])} уже нет ни в Web API, ни в Macrotask Queue.`,
+            ? `clearInterval stops timer #${Number(args[0])}${removed.label ? ` with callback "${removed.label}"` : ''}. Further repeats will not be scheduled.`
+            : `clearInterval stopped nothing: interval #${Number(args[0])} is already gone from both the Web API and the Macrotask Queue.`,
           line,
           'webapi',
         )
@@ -1408,7 +1403,7 @@ export function simulate(code: string): Step[] {
       'queueMicrotask',
       builtin('queueMicrotask', (args, line) => {
         const callback = asFn(args[0])
-        if (!callback) throw new Error('queueMicrotask ожидает функцию')
+        if (!callback) throw new Error('queueMicrotask expects a function')
         microtasks.push({
           id: uid(),
           label: callback.label,
@@ -1421,7 +1416,7 @@ export function simulate(code: string): Step[] {
           },
         })
         snapshot(
-          `queueMicrotask ставит «${callback.label}» в Microtask Queue. Это не таймер. Колбэк выполнится, когда текущий код на Call Stack закончится, раньше любой макрозадачи.`,
+          `queueMicrotask puts "${callback.label}" in the Microtask Queue. This is not a timer. The callback runs when the current Call Stack code finishes, before any macrotask.`,
           line,
           'micro',
         )
@@ -1459,7 +1454,7 @@ export function simulate(code: string): Step[] {
 
   function execVar(stmt: AstNode, env: Env) {
     for (const decl of list(stmt.declarations)) {
-      if ((decl.id as AstNode).type !== 'Identifier') throw new Error('Деструктуризация не поддерживается')
+      if ((decl.id as AstNode).type !== 'Identifier') throw new Error('Destructuring is not supported')
       const name = String((decl.id as AstNode).name)
       const value = decl.init ? evalExpr(decl.init as AstNode, env) : undefined
       if (stmt.kind === 'var') env.defineVar(name, value)
@@ -1468,7 +1463,7 @@ export function simulate(code: string): Step[] {
   }
 
   function loopGuard(count: number) {
-    if (count > MAX_LOOP) throw new Error('Слишком много итераций цикла')
+    if (count > MAX_LOOP) throw new Error('Too many loop iterations')
   }
 
   function execLoopBody(body: AstNode, env: Env) {
@@ -1507,18 +1502,18 @@ export function simulate(code: string): Step[] {
 
   function execForOf(node: AstNode, env: Env) {
     const right = evalExpr(node.right as AstNode, env)
-    if (!Array.isArray(right)) throw new Error('for...of поддерживает только массивы')
+    if (!Array.isArray(right)) throw new Error('for...of supports only arrays')
     const left = node.left as AstNode
     for (const item of right) {
       const iter = new Env(env)
       if (left.type === 'VariableDeclaration') {
         const decl = list(left.declarations)[0]
-        if ((decl.id as AstNode).type !== 'Identifier') throw new Error('Деструктуризация не поддерживается')
+        if ((decl.id as AstNode).type !== 'Identifier') throw new Error('Destructuring is not supported')
         const kind = left.kind === 'const' ? 'const' : left.kind === 'var' ? 'var' : 'let'
         if (kind === 'var') env.defineVar(String((decl.id as AstNode).name), item)
         else iter.define(String((decl.id as AstNode).name), item, kind)
       } else if (left.type === 'Identifier') env.set(String(left.name), item)
-      else throw new Error('Такой for...of не поддерживается')
+      else throw new Error('This form of for...of is not supported')
       const signal = execLoopBody(node.body as AstNode, left.type === 'VariableDeclaration' && left.kind === 'var' ? env : iter)
       if (signal === 'break') break
     }
@@ -1605,9 +1600,9 @@ export function simulate(code: string): Step[] {
         return
       case 'ClassDeclaration':
       case 'ClassExpression':
-        throw new Error('Классы в визуализаторе не поддерживаются')
+        throw new Error('Classes are not supported in the visualizer')
       default:
-        throw new Error(`Инструкция ${stmt.type} не поддерживается`)
+        throw new Error(`Statement ${stmt.type} is not supported`)
     }
   }
 
@@ -1616,7 +1611,7 @@ export function simulate(code: string): Step[] {
       if (promise.state === 'rejected' && !promise.handled) {
         log('error', `Unhandled rejection: ${formatValue(promise.value)}`)
         snapshot(
-          `Промис отклонён, а обработчика нет: ни catch, ни then с ошибкой. Причина «${formatValue(promise.value)}» попадает в консоль.`,
+          `A promise was rejected and there is no handler: no catch, and no then for the error. The reason "${formatValue(promise.value)}" goes to the console.`,
           promise.line || null,
           'console',
         )
@@ -1642,7 +1637,7 @@ export function simulate(code: string): Step[] {
         now = Math.min(...waiting.map((timer) => timer.expiresAt))
         const due = waiting.find((timer) => timer.expiresAt === now)
         snapshot(
-          `Виртуальное время переходит к ${now} мс. Реальные миллисекунды не идут. До этой отметки дождался таймер «${due?.label ?? waiting[0]?.label}»: на следующем шаге его колбэк перейдёт из Web API в Macrotask Queue.`,
+          `Virtual time moves to ${now} ms. Real milliseconds do not pass. Timer "${due?.label ?? waiting[0]?.label}" has reached this mark: on the next step its callback moves from the Web API to the Macrotask Queue.`,
           due?.line ?? waiting[0]?.line ?? null,
           'webapi',
         )
@@ -1651,7 +1646,7 @@ export function simulate(code: string): Step[] {
       break
     }
     reportUnhandled()
-    snapshot('Готово. Call Stack пуст. В Web API, Microtask Queue и Macrotask Queue ничего не осталось: всё запланированное уже выполнилось.', null, 'loop')
+    snapshot('Done. The Call Stack is empty. The Web API, the Microtask Queue, and the Macrotask Queue are empty: everything that was scheduled has already run.', null, 'loop')
   }
 
   const global = new Env(null)
@@ -1660,18 +1655,18 @@ export function simulate(code: string): Step[] {
 
   try {
     snapshot(
-      'Скрипт начинает выполняться сверху вниз. На Call Stack пока пусто: отдельной функции у всего скрипта нет, код идёт с первой строки. Пока этот код не закончится и Call Stack не станет пустым, Event Loop не будет брать задачи из очередей.',
+      'The script starts running from the top. The Call Stack is empty for now: the script itself has no function frame, and the code starts at the first line. The Event Loop leaves the queues alone until this code finishes and the Call Stack is empty.',
       1,
       'stack',
     )
     execStmts(list(ast.body), global)
     const idleMessage = microtasks.length
-      ? `Call Stack пуст. В Microtask Queue ${ru(microtasks.length, 'задача', 'задачи', 'задач')}, первая — «${microtasks[0]?.label}». Event Loop сначала выполнит все микрозадачи, по одной. Макрозадачу он возьмёт только после них.`
+      ? `The Call Stack is empty. The Microtask Queue has ${qty(microtasks.length, 'task')}. First is "${microtasks[0]?.label}". The Event Loop will run every microtask, one at a time. It takes a macrotask only after them.`
       : macrotasks.length
-        ? `Call Stack пуст. Микрозадач нет. В Macrotask Queue ${ru(macrotasks.length, 'задача', 'задачи', 'задач')}, первая — «${macrotasks[0]?.label}». Event Loop возьмёт только её.${macrotasks.length > 1 ? ' Остальные подождут следующих проходов: за один раз берётся одна макрозадача.' : ' Других макрозадач в очереди нет.'}`
+        ? `The Call Stack is empty. There are no microtasks. The Macrotask Queue has ${qty(macrotasks.length, 'task')}. First is "${macrotasks[0]?.label}". The Event Loop will take only that one.${macrotasks.length > 1 ? ' The others wait for later turns: one macrotask is taken at a time.' : ' No other macrotasks are waiting.'}`
         : webApis.length
-          ? `Call Stack пуст. Microtask Queue и Macrotask Queue пусты. В Web API ещё ${ru(webApis.length, 'таймер', 'таймера', 'таймеров')}: задержка не вышла, поэтому в очередь они пока не переходят.`
-          : 'Call Stack пуст. Очереди пусты: весь этот код был синхронным и уже выполнился. Event Loop брать нечего.'
+          ? `The Call Stack is empty. The Microtask Queue and the Macrotask Queue are empty. ${qty(webApis.length, 'timer')} ${webApis.length === 1 ? 'is' : 'are'} still in the Web API: the delay is not over, so they have not moved to a queue yet.`
+          : 'The Call Stack is empty. The queues are empty: this code was synchronous and has already finished. The Event Loop has nothing to take.'
     snapshot(idleMessage, null, 'loop')
     pump()
   } catch (error) {

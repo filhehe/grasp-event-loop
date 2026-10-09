@@ -67,7 +67,7 @@ export function BlockHelp({ label, text, href }: { label: string; text: string; 
         className="block-help"
         aria-expanded={open}
         aria-controls={open ? id : undefined}
-        aria-label={`Что такое ${label}`}
+        aria-label={`What is ${label}`}
         onClick={() => setOpen((value) => !value)}
       >
         ?
@@ -78,7 +78,7 @@ export function BlockHelp({ label, text, href }: { label: string; text: string; 
               <p className="block-help-title">{label}</p>
               <p>{text}</p>
               <a className="block-help-link" href={href} target="_blank" rel="noreferrer">
-                Открыть на MDN
+                Open on MDN
               </a>
             </div>,
             document.body,

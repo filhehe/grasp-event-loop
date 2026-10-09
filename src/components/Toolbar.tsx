@@ -86,7 +86,7 @@ export function Toolbar() {
   const step = useVisualizer((state) => state.step)
   const reset = useVisualizer((state) => state.reset)
   const playing = status === 'playing'
-  const runLabel = playing ? 'Пауза' : status === 'paused' ? 'Продолжить' : 'Запуск'
+  const runLabel = playing ? 'Pause' : status === 'paused' ? 'Resume' : 'Run'
   const { turn, duration } = useLoopTurn()
   const completed = useVisualizer((state) => state.completed)
   const matched = EXAMPLES.find((example) => example.code === code)?.id ?? 'custom'
@@ -121,7 +121,7 @@ export function Toolbar() {
             type="button"
             className="header-help"
             aria-expanded={help}
-            aria-label="Что поддерживается"
+            aria-label="What is supported"
             onClick={() => {
               setMenu(false)
               setHelp((open) => !open)
@@ -138,7 +138,7 @@ export function Toolbar() {
           rel="noopener noreferrer"
           onClick={() => track('Say thanks')}
         >
-          Сказать спасибо
+          Say thanks
         </a>
 
         <button
@@ -147,7 +147,7 @@ export function Toolbar() {
           className={`header-burger ${menu ? 'is-open' : ''}`}
           aria-expanded={menu}
           aria-controls="header-menu"
-          aria-label="Пример, уровень и интервал"
+          aria-label="Example, level, and interval"
           onClick={() => {
             setHelp(false)
             setMenu((open) => !open)
@@ -165,10 +165,10 @@ export function Toolbar() {
         <div className="header-controls">
           <div ref={menuRef} id="header-menu" className={`header-menu ${menu ? 'is-open' : ''}`}>
           <label className="header-field header-field-level">
-            Уровень
-            <Select
+            Level
+              <Select
               className="ui-select-level"
-              ariaLabel="Уровень"
+              ariaLabel="Level"
               value={level}
               options={LEVELS.map((item) => ({ value: item.id, label: item.label }))}
               onChange={(next) => setLevel(next as LevelFilter)}
@@ -176,13 +176,13 @@ export function Toolbar() {
           </label>
 
           <label className="header-field header-field-example">
-            Пример
-            <Select
+            Example
+              <Select
               className="ui-select-example"
-              ariaLabel="Пример"
+              ariaLabel="Example"
               value={matched}
               options={[
-                ...(matched === 'custom' ? [{ value: 'custom', label: 'Свой код' }] : []),
+                ...(matched === 'custom' ? [{ value: 'custom', label: 'Custom code' }] : []),
                 ...visible.map((example) => ({
                   value: example.id,
                   label: example.title,
@@ -197,7 +197,7 @@ export function Toolbar() {
           </label>
 
           <label className="header-field header-field-speed">
-            Интервал
+            Interval
             <span className="header-speed-control">
               <input
                 type="range"
@@ -205,20 +205,20 @@ export function Toolbar() {
                 max={1400}
                 step={50}
                 value={speed}
-                aria-label="Интервал между тиками"
+                aria-label="Interval between steps"
                 onChange={(event) => setSpeed(Number(event.target.value))}
               />
-              <span className="header-speed">{speed} мс</span>
+              <span className="header-speed">{speed} ms</span>
             </span>
           </label>
           </div>
 
           <div className="header-actions">
             <button type="button" className="toolbar-btn" onClick={reset}>
-              Сброс
+              Reset
             </button>
-            <button type="button" className="toolbar-btn" onClick={step} title="Следующий тик (Ctrl/⌘ + →)">
-              Шаг
+            <button type="button" className="toolbar-btn" onClick={step} title="Next step (Ctrl/⌘ + →)">
+              Step
             </button>
             <button type="button" className="toolbar-btn toolbar-btn-run" onClick={togglePlay} title={`${runLabel} (Ctrl/⌘ + Enter)`}>
               {runLabel}
@@ -229,12 +229,12 @@ export function Toolbar() {
 
       {help ? (
         <>
-          <button type="button" className="fixed inset-0 z-10 cursor-default" aria-label="Закрыть справку" onClick={() => setHelp(false)} />
+          <button type="button" className="fixed inset-0 z-10 cursor-default" aria-label="Close help" onClick={() => setHelp(false)} />
           <div className="absolute top-full left-4 z-20 mt-2 w-[min(26rem,calc(100vw-2rem))] rounded-2xl border border-white/10 bg-[#141820] p-4 text-sm leading-6 text-[#c5d0e0] shadow-2xl">
-            <p className="mb-2 font-medium text-white">Как устроен прогон</p>
-            <p>Синхронный код живёт в Call Stack. Таймеры ждут в Web API, промисы и queueMicrotask — в Microtask Queue. Когда стек пустеет, event loop сначала разбирает все микрозадачи и только потом берёт одну макротаску.</p>
-            <p className="mt-3 font-medium text-white">Что можно писать</p>
-            <p>console.log, setTimeout, setInterval, Promise, then/catch/finally, Promise.all, Promise.race, Promise.allSettled, async/await, queueMicrotask, функции, if, for, while, try/catch. Задержка таймера — виртуальное время, а не настоящие миллисекунды.</p>
+            <p className="mb-2 font-medium text-white">How a run works</p>
+            <p>Synchronous code lives on the Call Stack. Timers wait in the Web API. Promises and queueMicrotask wait in the Microtask Queue. When the stack is empty, the event loop drains every microtask and only then takes one macrotask.</p>
+            <p className="mt-3 font-medium text-white">What you can write</p>
+            <p>console.log, setTimeout, setInterval, Promise, then/catch/finally, Promise.all, Promise.race, Promise.allSettled, async/await, queueMicrotask, functions, if, for, while, try/catch. A timer delay is virtual time, measured in steps rather than real milliseconds.</p>
           </div>
         </>
       ) : null}

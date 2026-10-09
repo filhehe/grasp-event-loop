@@ -1,8 +1,8 @@
 {
-  "name": "Grasp Event Loop — визуализатор JavaScript event loop",
+  "name": "Grasp Event Loop — JavaScript event loop visualizer",
   "short_name": "Grasp Event Loop",
-  "description": "Пошаговый визуализатор event loop: Call Stack, микрозадачи, макрозадачи и 68 задач с собеседований.",
-  "lang": "ru",
+  "description": "A step-by-step event loop visualizer: Call Stack, microtasks, macrotasks, and 68 interview questions.",
+  "lang": "en",
   "dir": "ltr",
   "start_url": "/",
   "scope": "/",

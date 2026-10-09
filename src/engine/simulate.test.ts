@@ -307,8 +307,8 @@ const interviewLogs: Record<string, string[]> = {
   mixed: ['1', '5', '3', '4', '2'],
   'big-interview': ['start', 'end', 'promise 1', 'micro', 'promise 2', 'timeout 1', 'timeout 2'],
   'micro-drain': ['micro 1', 'micro 2', 'micro 3', 'macro 1', 'macro 2'],
-  debounce: ['ждем a', 'ждем b', 'ждем c', 'save c'],
-  throttle: ['send a', 'мимо b', 'мимо c', 'снова можно', 'send d', 'снова можно'],
+  debounce: ['waiting a', 'waiting b', 'waiting c', 'save c'],
+  throttle: ['send a', 'skipped b', 'skipped c', 'ready again', 'send d', 'ready again'],
   'junior-callback': ['before', 'after', 'callback'],
   'junior-resolve-timeout': ['A', 'B', 'E', 'C', 'D'],
   'mid-await-yields': ['start', 'body', 'end', 'after await', 'returned'],
@@ -345,8 +345,8 @@ for (const example of EXAMPLES) {
   }
 }
 
-assert.equal(isDequeue('Event loop берёт микротаску «fn» в Call Stack'), true)
-assert.equal(isDequeue('await завершился — «run» снова в Call Stack'), true)
-assert.equal(isDequeue('Call Stack пуст. Event loop берёт макротаску'), false)
+assert.equal(isDequeue('Event Loop takes the microtask "fn" and puts it on the Call Stack'), true)
+assert.equal(isDequeue('await finished — "run" is back on the Call Stack'), true)
+assert.equal(isDequeue('The Call Stack is empty. The Event Loop will take a macrotask'), false)
 
 console.log(`ok ${classic.steps.length} steps in the main example`)

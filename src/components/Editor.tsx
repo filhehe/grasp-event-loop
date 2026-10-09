@@ -105,12 +105,12 @@ export function Editor() {
   }
 
   return (
-    <section className="panel flex h-full min-h-0 flex-col" aria-label="Редактор кода">
+    <section className="panel flex h-full min-h-0 flex-col" aria-label="Code editor">
       <h2 className="zone-label">
         editor
         <BlockHelp
           label="editor"
-          text="Код, который выполняет визуализатор. На каждом шаге подсвечивается текущая строка, поэтому видно, какая инструкция сейчас работает."
+          text="The code the visualizer runs. Each step highlights the current line, so you can see which instruction is running."
           href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide"
         />
       </h2>
@@ -164,7 +164,7 @@ export function Editor() {
               spellCheck={false}
               autoCapitalize="off"
               autoCorrect="off"
-              aria-label="Код"
+              aria-label="Code"
               onChange={(event) => setCode(event.target.value)}
               onKeyDown={onKeyDown}
             />

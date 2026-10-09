@@ -98,5 +98,5 @@ export function planFlights(prev: CardSpot[], next: CardSpot[]): Flight[] {
 }
 
 export function isDequeue(message: string) {
-  return /^Event [Ll]oop берёт/.test(message) || message.includes('снова в Call Stack')
+  return /^Event Loop takes /.test(message) || message.includes('back on the Call Stack')
 }

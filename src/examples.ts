@@ -7,14 +7,14 @@ export type Example = {
 export const EXAMPLES: Example[] = [
   {
     id: 'sync-order',
-    title: '01 · Синхронный код',
+    title: '01 · Synchronous code',
     code: `console.log(1);
 console.log(2);
 console.log(3);`,
   },
   {
     id: 'nested-calls',
-    title: '02 · Вложенные вызовы',
+    title: '02 · Nested calls',
     code: `function inner() {
   console.log('inner');
 }
@@ -28,7 +28,7 @@ outer();`,
   },
   {
     id: 'three-calls',
-    title: '03 · Три уровня стека',
+    title: '03 · Three stack frames',
     code: `function third() {
   console.log('third');
 }
@@ -47,7 +47,7 @@ first();`,
   },
   {
     id: 'return-value',
-    title: '04 · return из функции',
+    title: '04 · return from a function',
     code: `function add(a, b) {
   return a + b;
 }
@@ -56,27 +56,27 @@ console.log(add(2, 3));`,
   },
   {
     id: 'timeout-after-sync',
-    title: '05 · Таймер после скрипта',
+    title: '05 · Timer after the script',
     code: `console.log('start');
 setTimeout(() => console.log('timeout'), 0);
 console.log('end');`,
   },
   {
     id: 'zero-delay',
-    title: '06 · Задержка 0 мс',
+    title: '06 · Zero delay',
     code: `setTimeout(() => console.log('timer'), 0);
 console.log('sync');`,
   },
   {
     id: 'two-timeouts',
-    title: '07 · Два таймера подряд',
+    title: '07 · Two timers in a row',
     code: `setTimeout(() => console.log(1), 0);
 setTimeout(() => console.log(2), 0);
 console.log(3);`,
   },
   {
     id: 'delays',
-    title: '08 · Порядок задержек',
+    title: '08 · Delay order',
     code: `console.log('start');
 
 setTimeout(() => console.log('100ms'), 100);
@@ -87,7 +87,7 @@ console.log('end');`,
   },
   {
     id: 'promise-executor',
-    title: '09 · Executor синхронный',
+    title: '09 · Synchronous executor',
     code: `console.log(1);
 
 new Promise((resolve) => {
@@ -99,14 +99,14 @@ console.log(3);`,
   },
   {
     id: 'then-after-sync',
-    title: '10 · then после скрипта',
+    title: '10 · then after the script',
     code: `console.log(1);
 Promise.resolve().then(() => console.log(2));
 console.log(3);`,
   },
   {
     id: 'two-thens',
-    title: '11 · Две микротаски',
+    title: '11 · Two microtasks',
     code: `Promise.resolve().then(() => console.log(1));
 Promise.resolve().then(() => console.log(2));
 console.log(3);`,
@@ -135,14 +135,14 @@ Promise.resolve().then(() => console.log('then'));`,
   },
   {
     id: 'micro-vs-then',
-    title: '14 · then раньше micro',
+    title: '14 · then before micro',
     code: `Promise.resolve().then(() => console.log('then'));
 queueMicrotask(() => console.log('micro'));
 console.log('sync');`,
   },
   {
     id: 'chain',
-    title: '15 · Цепочка then',
+    title: '15 · then chain',
     code: `console.log('start');
 
 Promise.resolve('A')
@@ -158,7 +158,7 @@ console.log('end');`,
   },
   {
     id: 'then-return',
-    title: '16 · then возвращает число',
+    title: '16 · then returns a number',
     code: `Promise.resolve(1)
   .then((value) => {
     console.log(value);
@@ -168,7 +168,7 @@ console.log('end');`,
   },
   {
     id: 'two-listeners',
-    title: '17 · Два then на промисе',
+    title: '17 · Two thens on one promise',
     code: `const promise = Promise.resolve();
 
 promise.then(() => console.log(1));
@@ -178,7 +178,7 @@ console.log(3);`,
   },
   {
     id: 'classic',
-    title: '18 · Таймауты и промисы',
+    title: '18 · Timeouts and promises',
     code: `setTimeout(() => console.log(1));
 Promise.resolve().then(() => console.log(2));
 Promise.resolve()
@@ -188,7 +188,7 @@ setTimeout(() => console.log(5));`,
   },
   {
     id: 'then-schedules-timeout',
-    title: '19 · then ставит таймер',
+    title: '19 · then schedules a timer',
     code: `console.log(1);
 
 Promise.resolve().then(() => {
@@ -201,7 +201,7 @@ console.log(5);`,
   },
   {
     id: 'timeout-schedules-then',
-    title: '20 · Таймер ставит then',
+    title: '20 · Timer schedules then',
     code: `setTimeout(() => {
   console.log(1);
   Promise.resolve().then(() => console.log(2));
@@ -211,7 +211,7 @@ setTimeout(() => console.log(3), 0);`,
   },
   {
     id: 'nested',
-    title: '21 · then внутри таймера',
+    title: '21 · then inside a timer',
     code: `setTimeout(() => {
   console.log('timeout');
   Promise.resolve().then(() => console.log('inner then'));
@@ -221,7 +221,7 @@ Promise.resolve().then(() => console.log('then'));`,
   },
   {
     id: 'micro-schedules-macro',
-    title: '22 · then ставит таймер 2',
+    title: '22 · then schedules a timer 2',
     code: `setTimeout(() => console.log('macro'), 0);
 
 Promise.resolve().then(() => {
@@ -231,7 +231,7 @@ Promise.resolve().then(() => {
   },
   {
     id: 'nested-timeouts',
-    title: '23 · Вложенные таймеры',
+    title: '23 · Nested timers',
     code: `console.log(1);
 
 setTimeout(() => {
@@ -258,7 +258,7 @@ Promise.resolve('ok')
   },
   {
     id: 'executor-throw',
-    title: '26 · throw в executor',
+    title: '26 · throw in the executor',
     code: `console.log(1);
 
 new Promise(() => {
@@ -282,7 +282,7 @@ console.log(3);`,
   },
   {
     id: 'try-misses-reject',
-    title: '28 · try не ловит reject',
+    title: '28 · try misses reject',
     code: `console.log(1);
 
 try {
@@ -310,7 +310,7 @@ console.log(3);`,
   },
   {
     id: 'async-without-await',
-    title: '30 · async без await',
+    title: '30 · async without await',
     code: `async function run() {
   console.log(2);
 }
@@ -321,7 +321,7 @@ console.log(3);`,
   },
   {
     id: 'two-awaits',
-    title: '31 · Два await',
+    title: '31 · Two awaits',
     code: `async function run() {
   console.log(1);
   await Promise.resolve();
@@ -335,7 +335,7 @@ console.log(4);`,
   },
   {
     id: 'async-and-then',
-    title: '32 · async и then',
+    title: '32 · async and then',
     code: `console.log(1);
 
 async function run() {
@@ -350,7 +350,7 @@ console.log(3);`,
   },
   {
     id: 'then-returns-promise',
-    title: '33 · then возвращает промис',
+    title: '33 · then returns a promise',
     code: `Promise.resolve(1)
   .then((value) => {
     console.log(value);
@@ -360,7 +360,7 @@ console.log(3);`,
   },
   {
     id: 'chain-three',
-    title: '34 · Три then',
+    title: '34 · Three thens',
     code: `Promise.resolve('a')
   .then((value) => {
     console.log(value);
@@ -374,7 +374,7 @@ console.log(3);`,
   },
   {
     id: 'micro-in-micro',
-    title: '35 · then внутри then',
+    title: '35 · then inside then',
     code: `Promise.resolve().then(() => {
   console.log(1);
   Promise.resolve().then(() => console.log(2));
@@ -384,7 +384,7 @@ Promise.resolve().then(() => console.log(3));`,
   },
   {
     id: 'queue-inside-then',
-    title: '36 · micro внутри then',
+    title: '36 · micro inside then',
     code: `Promise.resolve().then(() => {
   console.log(1);
   queueMicrotask(() => console.log(2));
@@ -394,21 +394,21 @@ Promise.resolve().then(() => console.log(3));`,
   },
   {
     id: 'let-timeout',
-    title: '37 · let и таймер',
+    title: '37 · let and a timer',
     code: `for (let i = 0; i < 3; i++) {
   setTimeout(() => console.log(i), 0);
 }`,
   },
   {
     id: 'var-timeout',
-    title: '38 · var и таймер',
+    title: '38 · var and a timer',
     code: `for (var i = 0; i < 3; i++) {
   setTimeout(() => console.log(i), 0);
 }`,
   },
   {
     id: 'loop',
-    title: '39 · let и var',
+    title: '39 · let and var',
     code: `for (let i = 0; i < 3; i++) {
   setTimeout(() => console.log('let', i), 0);
 }
@@ -419,14 +419,14 @@ for (var j = 0; j < 3; j++) {
   },
   {
     id: 'let-promise',
-    title: '40 · let и промисы',
+    title: '40 · let and promises',
     code: `for (let i = 0; i < 3; i++) {
   Promise.resolve().then(() => console.log(i));
 }`,
   },
   {
     id: 'var-promise',
-    title: '41 · var и промисы',
+    title: '41 · var and promises',
     code: `for (var i = 0; i < 3; i++) {
   Promise.resolve().then(() => console.log(i));
 }`,
@@ -451,7 +451,7 @@ const id = setInterval(() => {
   },
   {
     id: 'promise-vs-delays',
-    title: '44 · Промис и задержки',
+    title: '44 · Promise and delays',
     code: `setTimeout(() => console.log('slow'), 100);
 Promise.resolve().then(() => console.log('then'));
 setTimeout(() => console.log('fast'), 0);
@@ -459,7 +459,7 @@ console.log('sync');`,
   },
   {
     id: 'nested-async',
-    title: '45 · Вложенный async',
+    title: '45 · Nested async',
     code: `async function inner() {
   console.log('inner');
   await Promise.resolve();
@@ -477,7 +477,7 @@ console.log('sync');`,
   },
   {
     id: 'catch-recover',
-    title: '46 · catch возвращает значение',
+    title: '46 · catch returns a value',
     code: `Promise.reject('x')
   .catch((reason) => {
     console.log(reason);
@@ -487,7 +487,7 @@ console.log('sync');`,
   },
   {
     id: 'throw-in-then',
-    title: '47 · throw внутри then',
+    title: '47 · throw inside then',
     code: `Promise.resolve()
   .then(() => {
     throw 'boom';
@@ -496,7 +496,7 @@ console.log('sync');`,
   },
   {
     id: 'mixed',
-    title: '48 · Смешанный порядок',
+    title: '48 · Mixed order',
     code: `console.log(1);
 
 setTimeout(() => console.log(2), 0);
@@ -509,7 +509,7 @@ console.log(5);`,
   },
   {
     id: 'big-interview',
-    title: '49 · Большой вопрос',
+    title: '49 · A long question',
     code: `console.log('start');
 
 setTimeout(() => console.log('timeout 1'), 0);
@@ -527,7 +527,7 @@ console.log('end');`,
   },
   {
     id: 'micro-drain',
-    title: '50 · Сначала все микротаски',
+    title: '50 · Microtasks first',
     code: `setTimeout(() => console.log('macro 1'), 0);
 
 Promise.resolve()
@@ -545,7 +545,7 @@ setTimeout(() => console.log('macro 2'), 0);`,
   function debounced(value) {
     clearTimeout(id)
     id = setTimeout(() => fn(value), delay)
-    console.log('ждем', value)
+    console.log('waiting', value)
   }
   return debounced
 }
@@ -566,14 +566,14 @@ debounced('c')`,
   let locked = false
   function throttled(value) {
     if (locked) {
-      console.log('мимо', value)
+      console.log('skipped', value)
       return
     }
     fn(value)
     locked = true
     setTimeout(() => {
       locked = false
-      console.log('снова можно')
+      console.log('ready again')
     }, delay)
   }
   return throttled
@@ -591,7 +591,7 @@ setTimeout(() => throttled('d'), 100)`,
   },
   {
     id: 'junior-callback',
-    title: '53 · Junior · колбэк',
+    title: '53 · Junior · callback',
     code: `function later(callback) {
   setTimeout(callback, 0)
 }
@@ -602,7 +602,7 @@ console.log('after')`,
   },
   {
     id: 'junior-resolve-timeout',
-    title: '54 · Junior · resolve в таймере',
+    title: '54 · Junior · resolve in a timer',
     code: `console.log('A')
 
 new Promise((resolve) => {
@@ -617,7 +617,7 @@ console.log('E')`,
   },
   {
     id: 'mid-await-yields',
-    title: '55 · Mid · await не блокирует',
+    title: '55 · Mid · await yields',
     code: `console.log('start')
 
 async function run() {
@@ -631,7 +631,7 @@ console.log('end')`,
   },
   {
     id: 'mid-extra-tick',
-    title: '56 · Mid · лишний тик then',
+    title: '56 · Mid · extra then tick',
     code: `Promise.resolve()
   .then(() => {
     console.log('A')
@@ -645,7 +645,7 @@ Promise.resolve()
   },
   {
     id: 'mid-sequential-await',
-    title: '57 · Mid · await по очереди',
+    title: '57 · Mid · awaits in sequence',
     code: `function later(value) {
   return new Promise((resolve) => {
     setTimeout(() => {
@@ -667,14 +667,14 @@ console.log('sync')`,
   },
   {
     id: 'mid-finally-then',
-    title: '58 · Mid · finally перед then',
+    title: '58 · Mid · finally before then',
     code: `Promise.resolve('ok')
   .finally(() => console.log('finally'))
   .then((value) => console.log(value))`,
   },
   {
     id: 'senior-async1',
-    title: '59 · Senior · async1 и async2',
+    title: '59 · Senior · async1 and async2',
     code: `async function async1() {
   console.log('async1 start')
   await async2()
@@ -698,7 +698,7 @@ console.log('script end')`,
   },
   {
     id: 'senior-timers',
-    title: '60 · Senior · таймеры и промис',
+    title: '60 · Senior · timers and a promise',
     code: `console.log('start')
 
 setTimeout(() => console.log('timeout1'), 0)
@@ -713,14 +713,14 @@ console.log('end')`,
   },
   {
     id: 'senior-finally-reject',
-    title: '61 · Senior · finally и reject',
+    title: '61 · Senior · finally and reject',
     code: `Promise.reject('fail')
   .finally(() => console.log('finally'))
   .catch((error) => console.log(error))`,
   },
   {
     id: 'staff-checkpoint',
-    title: '62 · Staff · микротаска между таймерами',
+    title: '62 · Staff · microtask between timers',
     code: `setTimeout(() => {
   console.log('t1')
   queueMicrotask(() => console.log('t1 micro'))
@@ -733,7 +733,7 @@ setTimeout(() => {
   },
   {
     id: 'staff-starve',
-    title: '63 · Staff · микротаски держат таймер',
+    title: '63 · Staff · microtasks hold the timer',
     code: `let n = 0
 
 function again() {
@@ -747,7 +747,7 @@ queueMicrotask(again)`,
   },
   {
     id: 'staff-mix',
-    title: '64 · Staff · порядок очередей',
+    title: '64 · Staff · queue order',
     code: `console.log(1)
 
 setTimeout(() => console.log(2), 0)
@@ -772,7 +772,7 @@ Promise.all([later('slow', 30), later('fast', 10)]).then((values) => console.log
   },
   {
     id: 'promise-all-fail',
-    title: '66 · Mid · Promise.all падает',
+    title: '66 · Mid · Promise.all rejects',
     code: `Promise.all([Promise.resolve('ok'), Promise.reject('no')])
   .then((values) => console.log(values))
   .catch((error) => console.log(error))`,

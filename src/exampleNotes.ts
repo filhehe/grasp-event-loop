@@ -1,7 +1,7 @@
 export type Level = 'junior' | 'mid' | 'senior' | 'staff'
 
 export const LEVELS = [
-  { id: 'all', label: 'Все' },
+  { id: 'all', label: 'All' },
   { id: 'junior', label: 'Junior' },
   { id: 'mid', label: 'Mid' },
   { id: 'senior', label: 'Senior' },
@@ -13,274 +13,274 @@ export type LevelFilter = (typeof LEVELS)[number]['id']
 export const EXAMPLE_NOTES: Record<string, { level: Level; answer: string }> = {
   'sync-order': {
     level: 'junior',
-    answer: 'Три вызова подряд, без таймеров и промисов. В консоли просто 1, потом 2, потом 3.',
+    answer: 'Three calls in a row, with no timers and no promises. The console prints 1, then 2, then 3.',
   },
   'nested-calls': {
     level: 'junior',
-    answer: 'outer сначала печатает себя и только потом зовёт inner. В консоли outer, затем inner.',
+    answer: 'outer logs itself first and only then calls inner. The console shows outer, then inner.',
   },
   'three-calls': {
     level: 'junior',
-    answer: 'Стек растёт вверх: first зовёт second, second зовёт third. Логи идут по пути внутрь: first, second, third.',
+    answer: 'The stack grows upward: first calls second, second calls third. The logs follow the path inward: first, second, third.',
   },
   'return-value': {
     level: 'junior',
-    answer: 'add(2, 3) считается сразу и возвращает 5 в тот же момент. Очереди нет, в консоли одна строка: 5.',
+    answer: 'add(2, 3) runs immediately and returns 5 in the same moment. There is no queue. The console has one line: 5.',
   },
   'timeout-after-sync': {
     level: 'junior',
-    answer: 'start и end печатаются сразу. Таймер, даже с нулём, ждёт конца скрипта: start, end, timeout.',
+    answer: 'start and end print immediately. A timer, even at zero, waits until the script finishes: start, end, timeout.',
   },
   'zero-delay': {
     level: 'junior',
-    answer: 'Таймер записан раньше console.log, но 0 мс не делает его первым. Сначала sync, потом timer.',
+    answer: 'The timer is registered before console.log, and 0 ms still leaves it second. First sync, then timer.',
   },
   'two-timeouts': {
     level: 'junior',
-    answer: 'Сначала обычный лог, это 3. Два таймера с одной задержкой выходят в том порядке, в каком их записали: 1, затем 2.',
+    answer: 'The plain log is first, that is 3. Two timers with the same delay leave in the order they were registered: 1, then 2.',
   },
   delays: {
     level: 'junior',
-    answer: 'start и end сразу. Дальше таймеры идут по времени, не по строкам в коде: 0ms, потом 50ms, потом 100ms.',
+    answer: 'start and end run immediately. After that the timers follow their delays, not the line order in the source: 0ms, then 50ms, then 100ms.',
   },
   'promise-executor': {
     level: 'junior',
-    answer: 'Функция внутри new Promise выполняется сразу, then здесь нет. Поэтому всё синхронно: 1, потом 2, потом 3.',
+    answer: 'The function inside new Promise runs immediately. There is no then here, so everything is synchronous: 1, then 2, then 3.',
   },
   'then-after-sync': {
     level: 'junior',
-    answer: '1 и 3 печатаются сразу. 2 сидит в then и дожидается конца скрипта, поэтому она последняя.',
+    answer: '1 and 3 print immediately. 2 sits in then and waits for the script to finish, so it is last.',
   },
   'two-thens': {
     level: 'junior',
-    answer: '3 — обычный лог, он первый. Оба then уже стоят в очереди и идут следом по порядку: 1, потом 2.',
+    answer: '3 is a plain log, so it is first. Both thens are already queued and run next, in order: 1, then 2.',
   },
   order: {
     level: 'junior',
-    answer: 'start и end сразу. promise — микрозадача, она раньше таймера. В самом конце timeout.',
+    answer: 'start and end run immediately. promise is a microtask, so it runs before the timer. timeout is last.',
   },
   micro: {
     level: 'mid',
-    answer: 'queueMicrotask записали раньше then, поэтому micro раньше then. Таймер macro самый последний.',
+    answer: 'queueMicrotask was registered before then, so micro runs before then. The timer macro is last.',
   },
   'micro-vs-then': {
     level: 'mid',
-    answer: 'sync печатается сразу. then поставили раньше queueMicrotask, поэтому дальше then, и только потом micro.',
+    answer: 'sync prints immediately. then was registered before queueMicrotask, so next comes then, and only then micro.',
   },
   chain: {
     level: 'mid',
-    answer: 'start и end сразу. Потом цепочка: сначала A, then возвращает B, и следующий then печатает уже B.',
+    answer: 'start and end run immediately. Then the chain: first A, that then returns B, and the next then prints B.',
   },
   'then-return': {
     level: 'mid',
-    answer: 'Первый then получает 1 и печатает его, затем возвращает 2. Следующий then печатает 2. Оба шага — микрозадачи.',
+    answer: 'The first then receives 1 and prints it, then returns 2. The next then prints 2. Both steps are microtasks.',
   },
   'two-listeners': {
     level: 'mid',
-    answer: '3 печатается сразу. На одном промисе два then, они встают друг за другом: сначала 1, потом 2.',
+    answer: '3 prints immediately. One promise has two thens, and they line up one after the other: first 1, then 2.',
   },
   classic: {
     level: 'mid',
-    answer: '4 печатает функция внутри new Promise, сразу. 2 — это then, он раньше таймеров. Таймеры 1 и 5 стояли в коде по порядку, а 3 поставили уже из then, поэтому он последний.',
+    answer: '4 is printed by the function inside new Promise, immediately. 2 is a then, so it runs before the timers. Timers 1 and 5 were registered in source order, and 3 was scheduled later from inside then, so 3 is last.',
   },
   'then-schedules-timeout': {
     level: 'mid',
-    answer: '1 и 5 сразу, потом микрозадача 2. Таймер 4 поставили ещё в скрипте, а 3 — уже из then, поэтому 3 последний.',
+    answer: '1 and 5 run immediately, then microtask 2. Timer 4 was scheduled in the script, and 3 was scheduled later from inside then, so 3 is last.',
   },
   'timeout-schedules-then': {
     level: 'mid',
-    answer: 'Первый таймер печатает 1 и ставит then. Этот then, строка 2, успевает раньше второго таймера со строкой 3.',
+    answer: 'The first timer prints 1 and schedules a then. That then, line 2, runs before the second timer and its line 3.',
   },
   nested: {
     level: 'mid',
-    answer: 'then, который поставили в скрипте, идёт раньше таймера. Внутри таймера свой then печатает inner then сразу после timeout.',
+    answer: 'The then registered in the script runs before the timer. Inside the timer, its own then prints inner then right after timeout.',
   },
   'micro-schedules-macro': {
     level: 'mid',
-    answer: 'Сначала микрозадача micro. Таймер с самого начала печатает macro. later поставили уже из микрозадачи, он самый последний.',
+    answer: 'The microtask micro runs first. The timer that was there from the start prints macro. later was scheduled from the microtask, so it is last.',
   },
   'nested-timeouts': {
     level: 'mid',
-    answer: '1 сразу. Первый таймер печатает 2 и только тогда ставит таймер с 3. Таймер 4 уже стоял в очереди, поэтому он раньше 3.',
+    answer: '1 runs immediately. The first timer prints 2 and only then schedules the timer for 3. Timer 4 was already in the queue, so it runs before 3.',
   },
   catch: {
     level: 'junior',
-    answer: 'sync печатается сразу. reject скрипт не обрывает: catch забирает error уже после скрипта, микрозадачей.',
+    answer: 'sync prints immediately. reject does not stop the script: catch receives error after the script, as a microtask.',
   },
   finally: {
     level: 'mid',
-    answer: 'sync сразу. Потом finally, и следом then получает то же ok: finally здесь ничего не подменяет.',
+    answer: 'sync runs immediately. Then finally, and the following then receives the same ok: this finally does not replace the value.',
   },
   'executor-throw': {
     level: 'mid',
-    answer: '1 и 2 печатаются сразу: throw внутри new Promise не останавливает скрипт, он только отклоняет промис. catch в коде нет, поэтому отказ остаётся необработанным.',
+    answer: '1 and 2 print immediately: a throw inside new Promise does not stop the script, it only rejects the promise. There is no catch, so the rejection stays unhandled.',
   },
   'try-catch': {
     level: 'junior',
-    answer: 'throw ловится на месте, строка 2 после него не выполняется. В консоли 1, caught и 3.',
+    answer: 'throw is caught on the spot, so line 2 after it does not run. The console shows 1, caught, and 3.',
   },
   'try-misses-reject': {
     level: 'mid',
-    answer: 'try/catch здесь ничего не ловит. 1 и 2 печатаются, caught нет: reject случится позже и останется без обработчика.',
+    answer: 'try/catch catches nothing here. 1 and 2 print, and caught does not: the reject happens later and stays unhandled.',
   },
   async: {
     level: 'mid',
-    answer: '1, 2 и 3 идут сразу: до await функция не останавливает остальной скрипт. 4 печатается уже после await, поэтому она последняя.',
+    answer: '1, 2, and 3 run immediately: until await, the function does not stop the rest of the script. 4 prints after await, so it is last.',
   },
   'async-without-await': {
     level: 'mid',
-    answer: 'await в функции нет, ждать ей нечего. Всё выполняется сразу: 1, 2, 3.',
+    answer: 'The function has no await, so it has nothing to wait for. Everything runs immediately: 1, 2, 3.',
   },
   'two-awaits': {
     level: 'mid',
-    answer: '1 печатается до первого await, и сразу после этого успевает 4 снаружи. Дальше два продолжения по очереди: 2, затем 3.',
+    answer: '1 prints before the first await, and 4 from outside runs right after that. Then the two continuations run in order: 2, then 3.',
   },
   'async-and-then': {
     level: 'mid',
-    answer: '1, 2 и 3 сразу. Продолжение после await встало в очередь раньше соседнего then, поэтому сначала 4, потом 5.',
+    answer: '1, 2, and 3 run immediately. The continuation after await was queued before the neighboring then, so 4 comes first, then 5.',
   },
   'then-returns-promise': {
     level: 'mid',
-    answer: 'Первый then печатает 1 и возвращает промис. Следующий then ждёт не сам объект, а число внутри, и печатает 2.',
+    answer: 'The first then prints 1 and returns a promise. The next then waits for the number inside that promise and prints 2.',
   },
   'chain-three': {
     level: 'mid',
-    answer: 'Каждый then передаёт строку дальше отдельной микрозадачей. В консоли a, потом b, потом c.',
+    answer: 'Each then passes the string on as its own microtask. The console shows a, then b, then c.',
   },
   'micro-in-micro': {
     level: 'senior',
-    answer: 'Сначала печатается 1. then, который пишет 2, ставится уже внутри и встаёт в хвост. 3 к этому моменту уже ждала в очереди, поэтому она раньше 2.',
+    answer: '1 prints first. The then that logs 2 is scheduled from inside and joins the tail. 3 was already waiting in the queue, so it runs before 2.',
   },
   'queue-inside-then': {
     level: 'senior',
-    answer: 'С queueMicrotask то же самое: печатается 1, колбэк с 3 уже стоял в очереди, а колбэк с 2 встаёт за ним. В консоли 1, 3, 2.',
+    answer: 'queueMicrotask works the same way: 1 prints, the callback for 3 was already queued, and the callback for 2 lines up behind it. The console shows 1, 3, 2.',
   },
   'let-timeout': {
     level: 'mid',
-    answer: 'У каждой итерации свой let. Таймеры печатают 0, 1 и 2, а не одно последнее число.',
+    answer: 'Each iteration has its own let. The timers print 0, 1, and 2, each its own number.',
   },
   'var-timeout': {
     level: 'mid',
-    answer: 'var один на весь цикл. К моменту таймеров цикл уже кончился и i равен 3, поэтому три раза 3.',
+    answer: 'var is one binding for the whole loop. By the time the timers run, the loop has finished and i is 3, so the console shows 3 three times.',
   },
   loop: {
     level: 'mid',
-    answer: 'let помнит свою итерацию: let 0, let 1, let 2. var к концу цикла равен 3, поэтому три раза var 3.',
+    answer: 'let remembers its iteration: let 0, let 1, let 2. var is 3 by the end of the loop, so the console shows var 3 three times.',
   },
   'let-promise': {
     level: 'mid',
-    answer: 'С then то же, что с таймером: let сохраняет номер итерации. В консоли 0, 1, 2.',
+    answer: 'then behaves like the timer: let keeps the iteration number. The console shows 0, 1, 2.',
   },
   'var-promise': {
     level: 'mid',
-    answer: 'var к моменту микрозадач уже равен 3. Три then печатают одно и то же: 3, 3, 3.',
+    answer: 'var is already 3 by the time the microtasks run. Three thens print the same value: 3, 3, 3.',
   },
   'clear-timeout': {
     level: 'junior',
-    answer: 'Таймер с no успевает встать в очередь макрозадач, но clearTimeout снимает его до запуска. Печатается только yes.',
+    answer: 'The timer for no does reach the macrotask queue, and clearTimeout removes it before it runs. Only yes is printed.',
   },
   interval: {
     level: 'junior',
-    answer: 'Интервал не ставит все запуски сразу. Следующий появляется после предыдущего колбэка: 1, 2, 3, и на тройке его останавливают.',
+    answer: 'An interval does not schedule every run at once. The next one appears after the previous callback: 1, 2, 3, and the third run stops it.',
   },
   'promise-vs-delays': {
     level: 'mid',
-    answer: 'sync сразу, then раньше обоих таймеров. Из таймеров раньше тот, у кого меньше задержка: fast, потом slow.',
+    answer: 'sync runs immediately, and then runs before both timers. Of the timers, the shorter delay runs first: fast, then slow.',
   },
   'nested-async': {
     level: 'senior',
-    answer: 'outer и inner до своих await идут сразу, потом успевает sync. Продолжение inner возвращается раньше продолжения outer: inner after, затем outer after.',
+    answer: 'outer and inner run immediately until their awaits, then sync gets a turn. The inner continuation returns before the outer one: inner after, then outer after.',
   },
   'catch-recover': {
     level: 'mid',
-    answer: 'catch печатает x и возвращает обычную строку ok. Следующий then получает уже её, не ошибку.',
+    answer: 'catch prints x and returns the plain string ok. The next then receives that string.',
   },
   'throw-in-then': {
     level: 'mid',
-    answer: 'throw внутри then отклоняет промис этого then. catch забирает boom.',
+    answer: 'A throw inside then rejects that then’s promise. catch receives boom.',
   },
   mixed: {
     level: 'senior',
-    answer: '1 и 5 сразу. Потом микрозадачи в том порядке, в каком их поставили: 3, затем 4. Таймер 2 последний.',
+    answer: '1 and 5 run immediately. Then the microtasks run in the order they were queued: 3, then 4. Timer 2 is last.',
   },
   'big-interview': {
     level: 'senior',
-    answer: 'start и end сразу. Дальше микрозадачи: promise 1, потом micro (его поставили раньше второго then), потом promise 2. timeout 1 стоял с начала, timeout 2 поставили из промиса, поэтому он последний.',
+    answer: 'start and end run immediately. Then the microtasks: promise 1, then micro (it was queued before the second then), then promise 2. timeout 1 was there from the start, and timeout 2 was scheduled from the promise, so it is last.',
   },
   'micro-drain': {
     level: 'senior',
-    answer: 'Три then идут цепочкой, и оба таймера ждут. В консоли micro 1, micro 2, micro 3, и только потом macro 1, macro 2.',
+    answer: 'Three thens run as a chain, and both timers wait. The console shows micro 1, micro 2, micro 3, and only then macro 1, macro 2.',
   },
   debounce: {
     level: 'mid',
-    answer: 'Каждый вызов сбрасывает предыдущий таймер и пишет «ждем». До save доживает только последний аргумент, c.',
+    answer: 'Each call clears the previous timer and logs “waiting”. Only the last argument, c, survives long enough to reach save.',
   },
   throttle: {
     level: 'mid',
-    answer: 'a проходит сразу: send a. Пока окно закрыто, b и c — мимо. Таймер пишет «снова можно», d после этого проходит, и окно закрывается ещё раз.',
+    answer: 'a goes through immediately: send a. While the window is closed, b and c are skipped. The timer logs “ready again”, d goes through after that, and the window closes once more.',
   },
   'junior-callback': {
     level: 'junior',
-    answer: 'later не вызывает колбэк на месте, она отдаёт его таймеру. Сначала before и after, потом callback.',
+    answer: 'later does not call the callback on the spot. It hands the callback to a timer. First before and after, then callback.',
   },
   'junior-resolve-timeout': {
     level: 'junior',
-    answer: 'A, B и E сразу: B печатает функция внутри new Promise. C печатает уже таймер, и только тогда resolve пускает then с D.',
+    answer: 'A, B, and E run immediately: B is printed by the function inside new Promise. C is printed by the timer, and only then does resolve release the then that prints D.',
   },
   'mid-await-yields': {
     level: 'mid',
-    answer: 'start, body и end сразу: await останавливает только run, не весь скрипт. Потом after await, и следом then результата — returned.',
+    answer: 'start, body, and end run immediately: await pauses only run, not the whole script. Then after await, and then the result’s then — returned.',
   },
   'mid-extra-tick': {
     level: 'mid',
-    answer: 'then с A возвращает промис, и B из-за этого ждёт лишний шаг. Соседняя цепочка успевает целиком: A, C, D, и только потом B.',
+    answer: 'The then that logs A returns a promise, so B waits an extra step. The neighboring chain finishes first: A, C, D, and only then B.',
   },
   'mid-sequential-await': {
     level: 'mid',
-    answer: 'sync печатается сразу, второй таймер ещё не поставлен. Сначала ready a и got a, и только после этого стартует b: ready b, got b.',
+    answer: 'sync prints immediately, and the second timer is not scheduled yet. First ready a and got a, and only after that b starts: ready b, got b.',
   },
   'mid-finally-then': {
     level: 'mid',
-    answer: 'finally печатается раньше then. Значение ok доходит дальше без изменений: сначала finally, потом ok.',
+    answer: 'finally prints before then. The value ok continues unchanged: first finally, then ok.',
   },
   'senior-async1': {
     level: 'senior',
-    answer: 'До первого await всё сразу: script start, async1 start, async2, promise1, script end. Потом микрозадачи по порядку постановки: async1 end, затем promise2. setTimeout последний.',
+    answer: 'Everything before the first await runs immediately: script start, async1 start, async2, promise1, script end. Then the microtasks run in queue order: async1 end, then promise2. setTimeout is last.',
   },
   'senior-timers': {
     level: 'senior',
-    answer: 'start и end сразу, promise1 раньше таймеров. timeout1 и timeout3 поставили в скрипте, timeout2 — уже из промиса, поэтому он последний.',
+    answer: 'start and end run immediately, and promise1 runs before the timers. timeout1 and timeout3 were scheduled in the script, timeout2 was scheduled from the promise, so it is last.',
   },
   'senior-finally-reject': {
     level: 'senior',
-    answer: 'finally срабатывает и при отказе, раньше catch. Ошибку он не прячет: следом catch печатает fail.',
+    answer: 'finally runs on rejection too, before catch. It does not hide the error: catch then prints fail.',
   },
   'staff-checkpoint': {
     level: 'staff',
-    answer: 'После таймера t1 его микрозадача успевает раньше следующего таймера. Поэтому t1, t1 micro, и только потом t2, t2 micro.',
+    answer: 'After timer t1, its microtask runs before the next timer. So the order is t1, t1 micro, and only then t2, t2 micro.',
   },
   'staff-starve': {
     level: 'staff',
-    answer: 'Таймер стоит с самого начала, но микрозадача каждый раз ставит следующую. Пока цепочка 1, 2, 3 не кончится, macro не начнётся.',
+    answer: 'The timer has been waiting from the start, and each microtask schedules the next one. macro starts only after the chain 1, 2, 3 has finished.',
   },
   'staff-mix': {
     level: 'staff',
-    answer: '1 и 7 сразу. 3 и 5 — микрозадачи по порядку. 2 и 6 — таймеры из скрипта. 4 ставят уже из микрозадачи, поэтому он последний.',
+    answer: '1 and 7 run immediately. 3 and 5 are microtasks, in order. 2 and 6 are timers from the script. 4 is scheduled from a microtask, so it is last.',
   },
   'promise-all': {
     level: 'mid',
-    answer: 'sync сразу. fast завершается раньше slow, но массив всё равно в порядке списка: [slow, fast].',
+    answer: 'sync runs immediately. fast settles before slow, and the array is still in list order: [slow, fast].',
   },
   'promise-all-fail': {
     level: 'mid',
-    answer: 'Один reject роняет весь Promise.all. then с массивом не вызывается, в catch приходит no.',
+    answer: 'One reject rejects the whole Promise.all. The then that would receive the array is skipped, and catch receives no.',
   },
   'promise-race': {
     level: 'mid',
-    answer: 'sync печатается сразу. Из двух таймеров побеждает fast: он короче, slow на результат уже не влияет.',
+    answer: 'sync prints immediately. Of the two timers, fast wins: its delay is shorter, and slow no longer affects the result.',
   },
   'promise-all-settled': {
     level: 'mid',
-    answer: 'Отказ no не роняет общий промис. В массиве оба итога: fulfilled с ok и rejected с no.',
+    answer: 'The rejection no does not reject the combined promise. The array holds both outcomes: fulfilled with ok, and rejected with no.',
   },
 }
