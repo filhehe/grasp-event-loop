@@ -1,4 +1,3 @@
-import { track } from '@vercel/analytics/react'
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { EXAMPLE_NOTES, LEVELS, type LevelFilter } from '../exampleNotes.ts'
 import { EXAMPLES } from '../examples.ts'
@@ -130,16 +129,6 @@ export function Toolbar() {
             ?
           </button>
         </div>
-
-        <a
-          className="toolbar-btn header-thanks"
-          href="https://pay.cloudtips.ru/p/02f62c5c"
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => track('Say thanks')}
-        >
-          Say thanks
-        </a>
 
         <button
           ref={burgerRef}

@@ -214,16 +214,6 @@ textarea.editor-text::selection {
   color: #fff;
 }
 
-.header-thanks {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  align-self: center;
-  height: 36px;
-  white-space: nowrap;
-  text-decoration: none;
-}
-
 .header-controls {
   display: flex;
   flex: none;
@@ -457,7 +447,6 @@ textarea.editor-text::selection {
 }
 
 .toolbar-btn:focus-visible,
-.header-thanks:focus-visible,
 .header-help:focus-visible,
 .header-burger:focus-visible,
 .ui-select:focus-visible,
@@ -668,13 +657,6 @@ input:focus-visible {
     flex: none;
     order: 3;
     margin-left: 0;
-  }
-
-  .header-thanks {
-    order: 2;
-    flex: none;
-    height: 36px;
-    padding: 0 10px;
   }
 
   .header-menu {
